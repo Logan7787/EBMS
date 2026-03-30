@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-slate-700 bg-[#F8FAFC] antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.print\:hidden {
+  @media print {
+    display: none !important;
+  }
+}
+
+@media print {
+  body {
+    background-color: white !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "app": { "name": "E-Batta", "tagline": "Field Allowance Management" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "submit": "Submit Batta",
+    "inbox": "Inbox",
+    "report": "Reports",
+    "profile": "Profile",
+    "employees": "Employees",
+    "managers": "Managers",
+    "team": "My Team",
+    "logout": "Logout",
+    "submitMyBatta": "Submit My Batta"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "batta": {
+    "date": "Date",
+    "particulars": "Particulars",
+    "manager": "Reporting Manager",
+    "amount": "Batta Amount",
+    "submit": "Submit Entry",
+    "submitted": "Entry submitted successfully",
+    "duplicateDate": "Entry already exists for this date",
+    "futureDate": "Cannot submit future dates",
+    "recentEntries": "Recent Batta Entries",
+    "totalAmount": "Total Amount",
+    "days": "Days",
+    "fortnight": "Fortnight"
+  },
+  "employee": {
+    "code": "Employee Code",
+    "name": "Name",
+    "designation": "Designation",
+    "site": "Site",
+    "grade": "Grade",
+    "active": "Active",
+    "inactive": "Inactive",
+    "details": "Employee Details",
+    "rate": "Batta Rate"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "email": "Email",
+    "password": "Password",
+    "signingIn": "Signing in...",
+    "errorInactive": "Account is inactive. Contact HR."
+  },
+  "hr": {
+    "employees": "Employees",
+    "totalEmployees": "Total Employees",
+    "activeEmployees": "Active Employees",
+    "pendingApprovals": "Pending Approvals",
+    "thisMonthEntries": "This Month Entries",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee"
+  },
+  "manager": {
+    "teamMembers": "Team Members",
+    "approvedThisMonth": "Approved This Month",
+    "viewInbox": "View Inbox",
+    "myTeam": "My Team"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "approve": "Approve",
+    "reject": "Reject",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add New",
+    "download": "Download CSV",
+    "runReport": "Run Report",
+    "print": "Print"
+  },
+  "messages": {
+    "confirmDelete": "Are you sure you want to delete this?",
+    "confirmDeactivate": "Deactivate this employee?",
+    "saved": "Saved successfully",
+    "error": "Something went wrong",
+    "noData": "No data found",
+    "confirmAction": "Are you sure?"
+  }
+}

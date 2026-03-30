@@ -1,0 +1,305 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../stores/authStore'
+import { BattaEntry, BattaStatus } from '../types'
+
+export function useMyBattaEntries(status?: BattaStatus) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['batta-entries', user?.id, status],
+    queryFn: async () => {
+      let query = supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount),
+          approver:users!approved_by (name)
+        `)
+        .eq('emp_id', user?.id)
+        .order('date', { ascending: false })
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return data as BattaEntry[]
+    },
+    enabled: !!user?.id,
+  })
+}
+
+export function usePendingTeamBatta() {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['pending-batta', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount)
+        `)
+        .eq('manager_id', user?.id)
+        .eq('status', 'pending')
+        .order('date', { ascending: false })
+
+      if (error) throw error
+      return data as BattaEntry[]
+    },
+    enabled: !!user?.id && (user?.role === 'Manager' || user?.role === 'HR'),
+  })
+}
+
+export function useSubmitBatta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      date: string
+      particulars: string
+      managerId: string
+      empId: string
+      dayNight: 'Day' | 'Night'
+      category?: 'Work' | 'Leave' | 'NoWork'
+      time?: string
+    }) => {
+      const { error } = await supabase
+        .from('batta_entries')
+        .insert({
+          emp_id: payload.empId,
+          date: payload.date,
+          particulars: payload.particulars,
+          manager_id: payload.managerId,
+          day_night: payload.dayNight,
+          category: payload.category || 'Work',
+          time: payload.time || null,
+          status: 'pending',
+        })
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('duplicate_shift')
+        }
+        throw error
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['batta-entries'] })
+    },
+  })
+}
+
+export function useUpdateBattaStatus() {
+  const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      status, 
+      rejectReason, 
+      approvedAmount 
+    }: { 
+      id: string; 
+      status: 'approved' | 'rejected' 
+      rejectReason?: string
+      approvedAmount?: number
+    }) => {
+      const payload: any = {
+        status,
+        approved_by: user?.id
+      }
+      if (rejectReason) payload.reject_reason = rejectReason
+      if (approvedAmount !== undefined) payload.approved_amount = approvedAmount
+
+      const { error } = await supabase
+        .from('batta_entries')
+        .update(payload)
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pending-batta'] })
+    },
+  })
+}
+
+export function useBattaStats(userId?: string) {
+  const authUser = useAuthStore(s => s.user)
+  const id = userId || authUser?.id
+
+  return useQuery({
+    queryKey: ['batta-stats', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('batta_entries')
+        .select('status, date, approved_amount')
+        .eq('emp_id', id)
+
+      if (error) throw error
+      
+      const stats = {
+        pending: data.filter(d => d.status === 'pending').length,
+        approved: data.filter(d => d.status === 'approved').length,
+        thisMonth: data.filter(d => {
+          const dDate = new Date(d.date)
+          const now = new Date()
+          return dDate.getMonth() === now.getMonth() && d.status === 'approved'
+        }).length,
+        thisMonthAmount: data.filter(d => {
+          const dDate = new Date(d.date)
+          const now = new Date()
+          return dDate.getMonth() === now.getMonth() && d.status === 'approved'
+        }).reduce((sum, d) => sum + Number((d.approved_amount !== undefined && d.approved_amount !== null) ? d.approved_amount : (authUser?.battaAmount || 0)), 0)
+      }
+      return stats
+    },
+    enabled: !!id,
+  })
+}
+
+export function useTeamReport(month: number, year: number) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['team-report', user?.id, month, year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, batta_amount)
+        `)
+        .eq('status', 'approved')
+        .eq('approved_by', user?.id)
+
+      if (error) throw error
+
+      const filtered = data.filter(d => {
+        const dDate = new Date(d.date)
+        return (dDate.getMonth() + 1) === month && dDate.getFullYear() === year
+      })
+
+      return filtered as BattaEntry[]
+    },
+    enabled: !!user?.id && user?.role === 'Manager',
+  })
+}
+
+export function useGlobalBattaReport(month: number, year: number, period?: string, site?: string) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['global-batta-report', month, year, period, site],
+    queryFn: async () => {
+      let query = supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          approver:users!approved_by (name)
+        `)
+        .eq('status', 'approved')
+
+      const { data, error } = await query
+      if (error) throw error
+
+      // Calculate the full date range for the period
+      const lastDay = new Date(year, month, 0).getDate()
+      let startDay = 1
+      let endDay = lastDay
+
+      if (period === '1') endDay = 15
+      else if (period === '2') startDay = 16
+
+      const today = new Date()
+      // We'll generate dates for the entire selected period
+      const periodDates: string[] = []
+      for (let day = startDay; day <= endDay; day++) {
+        // Create date in local time to avoid UTC shift issues
+        const y = year
+        const m = String(month).padStart(2, '0')
+        const d = String(day).padStart(2, '0')
+        periodDates.push(`${y}-${m}-${d}`)
+      }
+
+      // Filter entries for the selected month/period
+      let filtered = data.filter(d => {
+        const dDate = new Date(d.date)
+        const isMonthMatch = (dDate.getMonth() + 1) === month && dDate.getFullYear() === year
+        if (!isMonthMatch) return false
+        
+        const day = dDate.getDate()
+        return day >= startDay && day <= endDay
+      })
+
+      if (site) {
+        filtered = filtered.filter(d => d.employee?.site === site)
+      }
+
+      // Group by employee
+      const grouped = filtered.reduce((acc: any[], current) => {
+        const existing = acc.find(item => item.emp_id === current.emp_id)
+        const isWork = current.category === 'Work' || !current.category
+        const amount = isWork 
+          ? (current.approved_amount !== undefined && current.approved_amount !== null 
+            ? current.approved_amount 
+            : (current.employee?.batta_amount || 0))
+          : 0
+
+        if (existing) {
+          if (isWork) {
+            if (current.day_night === 'Day') existing.dayCount += 1
+            else existing.nightCount += 1
+            existing.days += 1
+          }
+          existing.total += Number(amount)
+          existing.entries.push(current)
+        } else {
+          acc.push({
+            emp_id: current.emp_id,
+            name: current.employee?.name || 'Unknown',
+            emp_code: current.employee?.emp_code || '-',
+            designation: current.employee?.designation || '-',
+            site: current.employee?.site || '-',
+            dayCount: isWork ? (current.day_night === 'Day' ? 1 : 0) : 0,
+            nightCount: isWork ? (current.day_night === 'Night' ? 1 : 0) : 0,
+            days: isWork ? 1 : 0,
+            total: Number(amount),
+            entries: [current]
+          })
+        }
+        return acc
+      }, [])
+
+      // Identify gaps for each employee in the result
+      grouped.forEach(emp => {
+        const workedDates = new Set(emp.entries.map((e: any) => e.date))
+        const gaps: any[] = []
+
+        periodDates.forEach(dateStr => {
+          if (!workedDates.has(dateStr)) {
+            // Use local date creation to check for Sunday
+            const [y, m, d] = dateStr.split('-').map(Number)
+            const dateObj = new Date(y, m - 1, d)
+            const isSunday = dateObj.getDay() === 0
+            const isFuture = dateObj > today
+
+            if (isFuture) {
+              gaps.push({ date: dateStr, status: 'upcoming', label: 'Upcoming' })
+            } else if (isSunday) {
+              gaps.push({ date: dateStr, status: 'sunday', label: 'SUNDAY' })
+            } else {
+              gaps.push({ date: dateStr, status: 'missing', label: 'MISSING' })
+            }
+          }
+        })
+
+        emp.gaps = gaps
+        emp.missingCount = gaps.filter(g => g.status === 'missing').length
+      })
+
+      return grouped
+    },
+    enabled: !!user?.id && user?.role === 'HR',
+  })
+}
