@@ -4,15 +4,17 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { useEmployees, useToggleEmployeeActive } from '../../hooks/useEmployees'
-import { Edit2, ToggleLeft, ToggleRight, Plus, Search } from 'lucide-react'
+import { Edit2, ToggleLeft, ToggleRight, Plus, Search, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import EmployeeForm from './EmployeeForm'
+import BulkEmployeeUpload from '../../components/hr/BulkEmployeeUpload'
 
 export default function EmployeeList() {
   const { t } = useTranslation()
   const { data: employees, isLoading } = useEmployees()
   const toggleActive = useToggleEmployeeActive()
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isBulkOpen, setIsBulkOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
   const [search, setSearch] = useState('')
 
@@ -72,13 +74,22 @@ export default function EmployeeList() {
         title={t('hr.employees')} 
         subtitle="Manage your workforce and their allowance settings."
         action={
-          <button 
-            onClick={() => { setSelectedEmployee(null); setIsFormOpen(true); }}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-          >
-            <Plus size={18} />
-            {t('hr.addEmployee')}
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setIsBulkOpen(true)}
+              className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-slate-50 transition-all"
+            >
+              <Upload size={18} />
+              {t('hr.bulkUpload')}
+            </button>
+            <button 
+              onClick={() => { setSelectedEmployee(null); setIsFormOpen(true); }}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+            >
+              <Plus size={18} />
+              {t('hr.addEmployee')}
+            </button>
+          </div>
         }
       />
 
@@ -105,6 +116,16 @@ export default function EmployeeList() {
         <EmployeeForm 
           employee={selectedEmployee} 
           onClose={() => setIsFormOpen(false)} 
+        />
+      )}
+
+      {isBulkOpen && (
+        <BulkEmployeeUpload 
+          onClose={() => setIsBulkOpen(false)}
+          onComplete={() => {
+            setIsBulkOpen(false)
+            // No need to manually refresh, react-query handles it
+          }}
         />
       )}
     </div>

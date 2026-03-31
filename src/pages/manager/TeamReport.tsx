@@ -18,19 +18,21 @@ export default function TeamReport() {
   // Group entries by employee
   const reportData = entries?.reduce((acc: any[], current) => {
     const existing = acc.find(item => item.emp_code === current.employee?.emp_code);
-    const amount = current.approved_amount !== undefined && current.approved_amount !== null 
-      ? current.approved_amount 
-      : (current.employee?.batta_amount || 0);
+    const battaRate = Number(current.employee?.batta_amount || 0);
+    const approvedAmount = current.approved_amount !== undefined && current.approved_amount !== null 
+      ? Number(current.approved_amount) 
+      : battaRate;
+    const dutyValue = battaRate > 0 ? (approvedAmount / battaRate) : 1;
 
     if (existing) {
-      existing.days += 1;
-      existing.total += Number(amount);
+      existing.days += dutyValue;
+      existing.total += Number(approvedAmount);
     } else {
       acc.push({
         name: current.employee?.name || 'Unknown',
         emp_code: current.employee?.emp_code || '-',
-        days: 1,
-        total: Number(amount)
+        days: dutyValue,
+        total: Number(approvedAmount)
       });
     }
     return acc;
@@ -39,7 +41,7 @@ export default function TeamReport() {
   const columns = [
     { header: t('employee.name'), accessor: 'name' as const },
     { header: t('employee.code'), accessor: 'emp_code' as const },
-    { header: t('batta.days'), accessor: 'days' as const },
+    { header: t('batta.days'), accessor: (item: any) => +item.days.toFixed(1) },
     { 
       header: t('batta.totalAmount'), 
       accessor: (item: any) => `₹${item.total}` 

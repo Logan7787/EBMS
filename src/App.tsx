@@ -135,8 +135,8 @@ function App() {
         
         {/* MANAGER ROUTES */}
         <Route path="/manager" element={<PrivateRoute roles={['Manager']}><ManagerDashboard /></PrivateRoute>} />
-        <Route path="/manager/team" element={<PrivateRoute roles={['Manager']}><TeamReport /></PrivateRoute>} />
-        <Route path="/manager/inbox" element={<PrivateRoute roles={['Manager']}><ManagerInbox /></PrivateRoute>} />
+        <Route path="/manager/team" element={<PrivateRoute roles={['Manager', 'HR']}><TeamReport /></PrivateRoute>} />
+        <Route path="/manager/inbox" element={<PrivateRoute roles={['Manager', 'HR']}><ManagerInbox /></PrivateRoute>} />
         
         {/* SHARED MANAGER/EMPLOYEE ROUTES */}
         <Route path="/submit-batta" element={

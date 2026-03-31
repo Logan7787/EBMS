@@ -74,13 +74,31 @@ export default function FortnightReport() {
         );
       }
       const isWork = item.category === 'Work' || !item.category;
+      
+      let dutyValue = 1;
+      if (isWork) {
+        const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
+        const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
+        const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
+        dutyValue = defaultAmount > 0 ? (finalAmount / defaultAmount) : 1;
+      }
+
       return (
         <div className="flex flex-col">
           <span className={cn(
             "font-medium",
             !isWork && "text-slate-400 italic"
           )}>
-            {isWork ? item.day_night : (item.category === 'Leave' ? 'Leave' : 'No Work')}
+            {isWork ? (
+              <span className="flex items-center gap-1">
+                {item.day_night}
+                {dutyValue !== 1 && (
+                  <span className="text-[10px] bg-slate-100 px-1 rounded text-indigo-600 font-bold">
+                    {dutyValue}
+                  </span>
+                )}
+              </span>
+            ) : (item.category === 'Leave' ? 'Leave' : 'No Work')}
           </span>
           {isWork && item.day_night === 'Night' && item.time && (
             <span className="text-[10px] text-slate-400 font-semibold uppercase">{item.time}</span>
@@ -118,8 +136,21 @@ export default function FortnightReport() {
     return sum + Number(finalAmount);
   }, 0) || 0;
 
-  const totalDay = timelineData?.filter((item: any) => item.type === 'real' && (item.category === 'Work' || !item.category) && item.day_night === 'Day').length || 0;
-  const totalNight = timelineData?.filter((item: any) => item.type === 'real' && (item.category === 'Work' || !item.category) && item.day_night === 'Night').length || 0;
+  const totalDay = timelineData?.reduce((sum, item: any) => {
+    if (item.type !== 'real' || (item.category !== 'Work' && item.category) || item.day_night !== 'Day') return sum;
+    const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
+    const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
+    const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
+    return sum + (defaultAmount > 0 ? (finalAmount / defaultAmount) : 1);
+  }, 0) || 0;
+
+  const totalNight = timelineData?.reduce((sum, item: any) => {
+    if (item.type !== 'real' || (item.category !== 'Work' && item.category) || item.day_night !== 'Night') return sum;
+    const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
+    const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
+    const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
+    return sum + (defaultAmount > 0 ? (finalAmount / defaultAmount) : 1);
+  }, 0) || 0;
 
   return (
     <div className="space-y-6">

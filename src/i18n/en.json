@@ -56,7 +56,8 @@
     "pendingApprovals": "Pending Approvals",
     "thisMonthEntries": "This Month Entries",
     "addEmployee": "Add Employee",
-    "editEmployee": "Edit Employee"
+    "editEmployee": "Edit Employee",
+    "bulkUpload": "Bulk Upload"
   },
   "manager": {
     "teamMembers": "Team Members",

@@ -52,7 +52,7 @@ export function Sidebar() {
       label: "Team Inbox", 
       path: '/manager/inbox', 
       icon: Inbox, 
-      roles: ['Manager']
+      roles: ['Manager', 'HR']
     },
     { 
       label: t('nav.employees'), 
@@ -70,7 +70,7 @@ export function Sidebar() {
       label: "Team Report", 
       path: '/manager/team', 
       icon: Users, 
-      roles: ['Manager']
+      roles: ['Manager', 'HR']
     },
     { 
       label: "Global Reports", 

@@ -260,8 +260,8 @@ export default function HRReports() {
                     <td className="py-3 px-4 border-r border-slate-200 font-semibold text-slate-800">{item.name}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-600 italic">{item.designation}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-600">{item.site}</td>
-                    <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{item.dayCount}</td>
-                    <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{item.nightCount}</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{+item.dayCount.toFixed(1)}</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{+item.nightCount.toFixed(1)}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-900">₹{item.total.toLocaleString()}</td>
                   </tr>
                 ))}
@@ -270,10 +270,10 @@ export default function HRReports() {
                 <tr className="bg-slate-50/50 font-bold border-t-2 border-slate-200">
                   <td colSpan={5} className="py-4 px-6 text-right text-slate-600 uppercase tracking-wider text-xs border-r border-slate-200">GRAND TOTAL</td>
                   <td className="py-4 px-4 text-center border-r border-slate-200 text-indigo-600">
-                    {filteredBatta.reduce((sum, item) => sum + item.dayCount, 0)}
+                    {+filteredBatta.reduce((sum, item) => sum + item.dayCount, 0).toFixed(1)}
                   </td>
                   <td className="py-4 px-4 text-center border-r border-slate-200 text-purple-600">
-                    {filteredBatta.reduce((sum, item) => sum + item.nightCount, 0)}
+                    {+filteredBatta.reduce((sum, item) => sum + item.nightCount, 0).toFixed(1)}
                   </td>
                   <td className="py-4 px-6 text-right text-indigo-700 text-lg">
                     ₹{filteredBatta.reduce((sum, item) => sum + item.total, 0).toLocaleString()}
@@ -318,10 +318,10 @@ export default function HRReports() {
                     <td className="py-4 px-6 text-sm text-slate-500 italic">{item.designation}</td>
                     <td className="py-4 px-6 text-sm text-slate-600">{item.site}</td>
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
-                      <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full text-xs font-bold">{item.dayCount}</span>
+                      <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full text-xs font-bold">{+item.dayCount.toFixed(1)}</span>
                     </td>
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
-                      <span className="bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full text-xs font-bold">{item.nightCount}</span>
+                      <span className="bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full text-xs font-bold">{+item.nightCount.toFixed(1)}</span>
                     </td>
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
                       {item.missingCount > 0 && (
@@ -379,14 +379,23 @@ export default function HRReports() {
                                   <td className="px-4 py-2">
                                     {entry.type === 'worked' ? (
                                       <div className="flex flex-col">
-                                        {entry.category === 'Work' || !entry.category ? (
-                                          <span className={cn(
-                                            "px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-tighter w-fit",
-                                            entry.day_night === 'Day' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
-                                          )}>
-                                            {entry.day_night}
-                                          </span>
-                                        ) : (
+                                        {entry.category === 'Work' || !entry.category ? (() => {
+                                          const battaRate = Number(entry.employee?.batta_amount || 0)
+                                          const approvedAmount = entry.approved_amount !== undefined && entry.approved_amount !== null 
+                                            ? Number(entry.approved_amount) 
+                                            : battaRate
+                                          const dutyValue = battaRate > 0 ? (approvedAmount / battaRate) : 1
+                                          
+                                          return (
+                                            <span className={cn(
+                                              "px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-tighter w-fit flex items-center gap-1",
+                                              entry.day_night === 'Day' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
+                                            )}>
+                                              {entry.day_night}
+                                              {dutyValue !== 1 && <span>({dutyValue})</span>}
+                                            </span>
+                                          )
+                                        })() : (
                                           <span className={cn(
                                             "px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-tighter w-fit",
                                             entry.category === 'Leave' ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600"

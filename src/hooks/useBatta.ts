@@ -52,6 +52,32 @@ export function usePendingTeamBatta() {
   })
 }
 
+export function useRecentTeamDecisions() {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['recent-team-decisions', user?.id],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+      const { data, error } = await supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount)
+        `)
+        .eq('manager_id', user?.id)
+        .neq('status', 'pending')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data as BattaEntry[]
+    },
+    enabled: !!user?.id && (user?.role === 'Manager' || user?.role === 'HR'),
+  })
+}
+
 export function useSubmitBatta() {
   const qc = useQueryClient()
   return useMutation({
@@ -101,16 +127,16 @@ export function useUpdateBattaStatus() {
       approvedAmount 
     }: { 
       id: string; 
-      status: 'approved' | 'rejected' 
+      status: 'approved' | 'rejected' | 'pending'
       rejectReason?: string
       approvedAmount?: number
     }) => {
       const payload: any = {
         status,
-        approved_by: user?.id
+        approved_by: status === 'pending' ? null : user?.id,
+        reject_reason: status === 'pending' ? null : (rejectReason || undefined),
+        approved_amount: status === 'pending' ? null : (approvedAmount !== undefined ? approvedAmount : undefined)
       }
-      if (rejectReason) payload.reject_reason = rejectReason
-      if (approvedAmount !== undefined) payload.approved_amount = approvedAmount
 
       const { error } = await supabase
         .from('batta_entries')
@@ -121,6 +147,7 @@ export function useUpdateBattaStatus() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pending-batta'] })
+      qc.invalidateQueries({ queryKey: ['recent-team-decisions'] })
     },
   })
 }
@@ -146,7 +173,13 @@ export function useBattaStats(userId?: string) {
           const dDate = new Date(d.date)
           const now = new Date()
           return dDate.getMonth() === now.getMonth() && d.status === 'approved'
-        }).length,
+        }).reduce((sum, d) => {
+          const battaRate = Number(authUser?.battaAmount || 0)
+          const approvedAmount = d.approved_amount !== undefined && d.approved_amount !== null 
+            ? Number(d.approved_amount) 
+            : battaRate
+          return sum + (battaRate > 0 ? (approvedAmount / battaRate) : 1)
+        }, 0),
         thisMonthAmount: data.filter(d => {
           const dDate = new Date(d.date)
           const now = new Date()
@@ -182,7 +215,7 @@ export function useTeamReport(month: number, year: number) {
 
       return filtered as BattaEntry[]
     },
-    enabled: !!user?.id && user?.role === 'Manager',
+    enabled: !!user?.id && (user?.role === 'Manager' || user?.role === 'HR'),
   })
 }
 
@@ -240,16 +273,19 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       const grouped = filtered.reduce((acc: any[], current) => {
         const existing = acc.find(item => item.emp_id === current.emp_id)
         const isWork = current.category === 'Work' || !current.category
-        const amount = isWork 
-          ? (current.approved_amount !== undefined && current.approved_amount !== null 
-            ? current.approved_amount 
-            : (current.employee?.batta_amount || 0))
-          : 0
+        
+        const battaRate = Number(current.employee?.batta_amount || 0)
+        const approvedAmountValue = current.approved_amount !== undefined && current.approved_amount !== null 
+          ? Number(current.approved_amount) 
+          : battaRate
+        const dutyValue = battaRate > 0 ? (approvedAmountValue / battaRate) : 1
+
+        const amount = isWork ? approvedAmountValue : 0
 
         if (existing) {
           if (isWork) {
-            if (current.day_night === 'Day') existing.dayCount += 1
-            else existing.nightCount += 1
+            if (current.day_night === 'Day') existing.dayCount += dutyValue
+            else existing.nightCount += dutyValue
             existing.days += 1
           }
           existing.total += Number(amount)
@@ -261,8 +297,8 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
             emp_code: current.employee?.emp_code || '-',
             designation: current.employee?.designation || '-',
             site: current.employee?.site || '-',
-            dayCount: isWork ? (current.day_night === 'Day' ? 1 : 0) : 0,
-            nightCount: isWork ? (current.day_night === 'Night' ? 1 : 0) : 0,
+            dayCount: isWork ? (current.day_night === 'Day' ? dutyValue : 0) : 0,
+            nightCount: isWork ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
             days: isWork ? 1 : 0,
             total: Number(amount),
             entries: [current]
