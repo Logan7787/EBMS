@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,7 @@ import { useManagers } from '../../hooks/useEmployees'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'sonner'
 import { PageHeader } from '../../components/shared/PageHeader'
-import { Send, Calendar, MessageSquare, UserCheck, Loader2, SunMoon, Clock } from 'lucide-react'
+import { Send, Calendar, MessageSquare, UserCheck, Loader2, SunMoon, Clock, Mic, MicOff } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 export default function SubmitBatta() {
@@ -29,6 +29,68 @@ export default function SubmitBatta() {
       time: ''
     }
   })
+
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+
+    const SpeechRecognition = typeof window !== 'undefined' 
+      ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) 
+      : null
+
+    if (!SpeechRecognition) {
+      toast.error('Voice-to-Text is not supported in this browser. Please use Chrome or Edge.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true // Show results as they come
+    recognition.lang = 'en-IN' // Explicitly set for better accuracy in India
+
+    recognition.onstart = () => {
+      setIsListening(true)
+      toast.info('Listening... Please speak now.')
+    }
+    
+    recognition.onend = () => setIsListening(false)
+    
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error)
+      setIsListening(false)
+      if (event.error === 'not-allowed') {
+        toast.error('Microphone access denied!')
+      } else if (event.error === 'no-speech') {
+        toast.info('No speech heard. Trying to listen again...')
+      }
+    }
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ''
+      
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript
+        }
+      }
+
+      if (finalTranscript) {
+        const currentText = watch('particulars') || ''
+        const spacer = currentText && !currentText.endsWith(' ') ? ' ' : ''
+        setValue('particulars', currentText + spacer + finalTranscript.trim(), { shouldDirty: true })
+        console.log('Final speech captured:', finalTranscript)
+      }
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+  }
 
   const category = watch('category')
 
@@ -163,10 +225,31 @@ export default function SubmitBatta() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <MessageSquare size={16} className="text-indigo-500" />
-              {t('batta.particulars')}
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <MessageSquare size={16} className="text-indigo-500" />
+                {t('batta.particulars')}
+              </label>
+              
+              {category === 'Work' && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all",
+                    isListening 
+                      ? "bg-red-50 text-red-600 animate-pulse border border-red-200" 
+                      : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100"
+                  )}
+                >
+                  {isListening ? (
+                    <><MicOff size={12} /> STOP VOICE</>
+                  ) : (
+                    <><Mic size={12} /> TYPE BY VOICE</>
+                  )}
+                </button>
+              )}
+            </div>
             <textarea 
               {...register('particulars')}
               rows={category === 'Work' ? 4 : 2}
