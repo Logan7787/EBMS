@@ -17,8 +17,6 @@ export const battaSubmitSchema = z.object({
   dayNight: z.enum(['Day', 'Night']),
   category: z.enum(['Work', 'Leave', 'NoWork']),
   time: z.string().optional(),
-  finalState: z.string().optional(),
-  finalStep: z.string().optional(),
 }).refine(data => {
   if (data.dayNight === 'Night' && (!data.time || data.time.trim() === '')) {
     return false;

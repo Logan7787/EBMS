@@ -32,8 +32,6 @@ export interface BattaEntry {
   time?: string
   reject_reason?: string
   approved_amount?: number
-  final_state?: string
-  final_step?: string
   // Joined data
   employee?: {
     name: string

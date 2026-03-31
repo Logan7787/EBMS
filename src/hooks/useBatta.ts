@@ -89,8 +89,6 @@ export function useSubmitBatta() {
       dayNight: 'Day' | 'Night'
       category?: 'Work' | 'Leave' | 'NoWork'
       time?: string
-      finalState?: string
-      finalStep?: string
     }) => {
       const { error } = await supabase
         .from('batta_entries')
@@ -102,8 +100,6 @@ export function useSubmitBatta() {
           day_night: payload.dayNight,
           category: payload.category || 'Work',
           time: payload.time || null,
-          final_state: payload.finalState || null,
-          final_step: payload.finalStep || null,
           status: 'pending',
         })
 
@@ -305,8 +301,6 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
             nightCount: isWork ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
             days: isWork ? 1 : 0,
             total: Number(amount),
-            final_state: current.final_state || '-',
-            final_step: current.final_step || '-',
             entries: [current]
           })
         }
