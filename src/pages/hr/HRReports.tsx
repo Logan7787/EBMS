@@ -60,7 +60,7 @@ export default function HRReports() {
   const exportCSV = () => {
     if (!reportData || reportData.length === 0) return
 
-    const headers = ['EmpCode', 'Name', 'Designation', 'Site', 'Day', 'Night', 'Total Amount']
+    const headers = ['EmpCode', 'Name', 'Designation', 'Site', 'Day', 'Night', 'Final State', 'Final Step', 'Total Amount']
     const rows = filteredBatta.map(item => [
       item.emp_code,
       item.name,
@@ -68,6 +68,8 @@ export default function HRReports() {
       item.site,
       item.dayCount,
       item.nightCount,
+      item.final_state,
+      item.final_step,
       item.total
     ])
 
@@ -249,6 +251,8 @@ export default function HRReports() {
                   <th className="py-3 px-4 font-bold border-r border-slate-200">Site</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200 text-center">Day</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200 text-center">Night</th>
+                  <th className="py-3 px-4 font-bold border-r border-slate-200">Final State</th>
+                  <th className="py-3 px-4 font-bold border-r border-slate-200">Final Step</th>
                   <th className="py-3 px-4 font-bold text-right">Total Amount</th>
                 </tr>
               </thead>
@@ -262,6 +266,8 @@ export default function HRReports() {
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-600">{item.site}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{+item.dayCount.toFixed(1)}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{+item.nightCount.toFixed(1)}</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-slate-600">{item.final_state}</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-slate-600">{item.final_step}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-900">₹{item.total.toLocaleString()}</td>
                   </tr>
                 ))}
@@ -274,6 +280,12 @@ export default function HRReports() {
                   </td>
                   <td className="py-4 px-4 text-center border-r border-slate-200 text-purple-600">
                     {+filteredBatta.reduce((sum, item) => sum + item.nightCount, 0).toFixed(1)}
+                  </td>
+                  <td className="py-4 px-4 text-center border-r border-slate-200 text-slate-600">
+                    -
+                  </td>
+                  <td className="py-4 px-4 text-center border-r border-slate-200 text-slate-600">
+                    -
                   </td>
                   <td className="py-4 px-6 text-right text-indigo-700 text-lg">
                     ₹{filteredBatta.reduce((sum, item) => sum + item.total, 0).toLocaleString()}
@@ -294,6 +306,8 @@ export default function HRReports() {
                 <th className="py-4 px-6 font-semibold">Site</th>
                 <th className="py-4 px-6 font-semibold text-center">Day</th>
                 <th className="py-4 px-6 font-semibold text-center">Night</th>
+                <th className="py-4 px-6 font-semibold">Final State</th>
+                <th className="py-4 px-6 font-semibold">Final Step</th>
                 <th className="py-4 px-6 font-semibold text-center text-red-500">Gaps</th>
                 <th className="py-4 px-6 font-semibold text-right">Total Amount</th>
               </tr>
@@ -323,6 +337,8 @@ export default function HRReports() {
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
                       <span className="bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full text-xs font-bold">{+item.nightCount.toFixed(1)}</span>
                     </td>
+                    <td className="py-4 px-6 text-sm text-slate-600">{item.final_state}</td>
+                    <td className="py-4 px-6 text-sm text-slate-600">{item.final_step}</td>
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
                       {item.missingCount > 0 && (
                         <span className="bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-bold">{item.missingCount}</span>
@@ -333,7 +349,7 @@ export default function HRReports() {
                   
                   {expandedRows.includes(item.emp_id) && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+                      <td colSpan={11} className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ml-10">
                           <div className="bg-slate-50 px-4 py-2 border-b flex justify-between items-center">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Attendance Timeline</span>

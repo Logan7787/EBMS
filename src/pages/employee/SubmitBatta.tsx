@@ -264,6 +264,32 @@ export default function SubmitBatta() {
             {errors.particulars && <p className="text-red-500 text-xs font-medium">{errors.particulars.message}</p>}
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <Send size={16} className="text-indigo-500" />
+                Final State (Location)
+              </label>
+              <input 
+                {...register('finalState')}
+                placeholder="e.g. Maharashtra"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 transition-all text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <Send size={16} className="text-indigo-500" />
+                Final Step (Destination)
+              </label>
+              <input 
+                {...register('finalStep')}
+                placeholder="e.g. Mumbai HQ"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 transition-all text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <UserCheck size={16} className="text-indigo-500" />
