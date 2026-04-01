@@ -17,6 +17,7 @@ export default function EmployeeList() {
   const [isBulkOpen, setIsBulkOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
   const [search, setSearch] = useState('')
+  const [site, setSite] = useState('')
 
   const handleEdit = (emp: any) => {
     setSelectedEmployee(emp)
@@ -32,15 +33,25 @@ export default function EmployeeList() {
     }
   }
 
-  const filteredEmployees = employees?.filter(e => 
-    e.name.toLowerCase().includes(search.toLowerCase()) || 
-    e.emp_code.toLowerCase().includes(search.toLowerCase())
-  )
+  const sites = Array.from(new Set(employees?.map(e => e.site).filter(Boolean))).sort()
+
+  const filteredEmployees = employees?.filter(e => {
+    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase()) || 
+                         e.emp_code.toLowerCase().includes(search.toLowerCase())
+    const matchesSite = !site || e.site === site
+    return matchesSearch && matchesSite
+  })
 
   const columns = [
+    { 
+      header: 'S.No', 
+      accessor: (_: any, index: number) => index + 1,
+      className: 'w-12 text-center font-bold text-slate-400'
+    },
     { header: t('employee.code'), accessor: 'emp_code' as const },
     { header: t('employee.name'), accessor: 'name' as const },
     { header: t('employee.designation'), accessor: 'designation' as const },
+    { header: 'Catg Code', accessor: 'catg_code' as const, sortable: true },
     { header: t('employee.site'), accessor: 'site' as const },
     { header: 'Role', accessor: 'role' as const },
     { 
@@ -99,10 +110,20 @@ export default function EmployeeList() {
           <input 
             type="text" 
             placeholder="Search by name or code..."
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        <div className="w-48">
+          <select 
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="">All Sites</option>
+            {sites.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
       </div>
 

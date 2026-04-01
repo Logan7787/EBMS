@@ -5,7 +5,7 @@ import { ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface Column<T> {
   header: string
-  accessor: keyof T | ((item: T) => ReactNode)
+  accessor: keyof T | ((item: T, index: number) => ReactNode)
   className?: string
   sortable?: boolean
   sortKey?: string // Useful if accessor is a function
@@ -134,7 +134,7 @@ export function DataTable<T>({ columns, data, loading, emptyMessage, onRowClick 
                 {columns.map((col, colIdx) => (
                   <td key={colIdx} className={cn("py-4 px-6 text-sm text-slate-600 font-medium group-hover:text-slate-900 transition-colors", col.className)}>
                     {typeof col.accessor === 'function' 
-                      ? col.accessor(item) 
+                      ? col.accessor(item, rowIdx) 
                       : (item[col.accessor] as ReactNode)}
                   </td>
                 ))}

@@ -19,6 +19,9 @@ interface UploadRow {
   battaAmount: number
   role: 'Employee' | 'Manager' | 'HR'
   managerEmpCode?: string
+  grade?: string
+  catgCode?: string
+  gradeCode?: string
 }
 
 interface UploadStatus {
@@ -45,7 +48,10 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
       'Site',
       'Batta Rate',
       'Role',
-      'Reporting Manager Code'
+      'Reporting Manager Code',
+      'Grade',
+      'Category Code',
+      'Grade Code'
     ]
     const example = [
       '1001',
@@ -56,7 +62,10 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
       'BO',
       '500',
       'Employee',
-      '1000'
+      '1000',
+      'G1',
+      'CAT-A',
+      'GC-01'
     ]
     const csvContent = Papa.unparse([headers, example])
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -88,7 +97,10 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
           site: row['Site'] || '',
           battaAmount: parseFloat(row['Batta Rate']) || 0,
           role: row['Role'] || 'Employee',
-          managerEmpCode: row['Reporting Manager Code'] || ''
+          managerEmpCode: row['Reporting Manager Code'] || '',
+          grade: row['Grade'] || '',
+          catgCode: row['Category Code'] || '',
+          gradeCode: row['Grade Code'] || ''
         }))
 
         // Basic validation
@@ -115,7 +127,7 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
       .select('id, emp_code')
       .in('role', ['Manager', 'HR'])
 
-    const managerMap = new Map(managers?.map(m => [m.emp_code, m.id]))
+    const managerMap = new Map<string, string>((managers || []).map(m => [m.emp_code, m.id]))
 
     for (let i = 0; i < data.length; i++) {
         const rowData = data[i]
@@ -124,42 +136,62 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
         ))
 
         try {
-            // 1. Validation
-            if (!rowData.email || !rowData.name || !rowData.empCode) {
-                throw new Error('Missing required fields (Email, Name, or Emp Code)')
-            }
-            if (!rowData.password || rowData.password.length < 6) {
-                throw new Error('Password min 6 characters required for new users')
-            }
+            // 1. Check if user already exists by empCode
+            const { data: existingUser } = await supabase
+                .from('users')
+                .select('id, email')
+                .eq('emp_code', rowData.empCode)
+                .single()
 
-            // 2. Map manager
             const managerId = rowData.managerEmpCode ? managerMap.get(rowData.managerEmpCode) : null
 
-            // 3. Auth Sign Up
-            const { data: authData, error: authError } = await supabaseCreator.auth.signUp({
-                email: rowData.email,
-                password: rowData.password,
-            })
+            const userData = {
+                emp_code: rowData.empCode,
+                name: rowData.name,
+                role: rowData.role,
+                designation: rowData.designation,
+                site: rowData.site,
+                batta_amount: rowData.battaAmount,
+                manager_id: managerId,
+                active: true,
+                grade: rowData.grade,
+                catg_code: rowData.catgCode,
+                grade_code: rowData.gradeCode
+            }
 
-            if (authError) throw authError
-            if (!authData.user) throw new Error('Auth creation failed')
+            if (existingUser) {
+                // Update existing user
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update(userData)
+                    .eq('id', existingUser.id)
+                
+                if (updateError) throw updateError
+            } else {
+                // Create new user
+                if (!rowData.email || !rowData.name || !rowData.empCode) {
+                    throw new Error('Missing required fields for new user (Email, Name, or Emp Code)')
+                }
+                if (!rowData.password || rowData.password.length < 6) {
+                    throw new Error('Password min 6 characters required for new users')
+                }
 
-            // 4. Update Profile (The trigger handle_new_user should have already created the row)
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({
-                    emp_code: rowData.empCode,
-                    name: rowData.name,
-                    role: rowData.role,
-                    designation: rowData.designation,
-                    site: rowData.site,
-                    batta_amount: rowData.battaAmount,
-                    manager_id: managerId,
-                    active: true
+                const { data: authData, error: authError } = await supabaseCreator.auth.signUp({
+                    email: rowData.email,
+                    password: rowData.password,
                 })
-                .eq('id', authData.user.id)
 
-            if (updateError) throw updateError
+                if (authError) throw authError
+                if (!authData.user) throw new Error('Auth creation failed')
+
+                // The trigger handle_new_user creates the profile, we just update it
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update(userData)
+                    .eq('id', authData.user.id)
+
+                if (updateError) throw updateError
+            }
 
             setResults(prev => prev.map((res, idx) => 
                 idx === i ? { ...res, status: 'success' } : res

@@ -42,14 +42,21 @@ export default function HRReports() {
     item.emp_code.toLowerCase().includes(filters.search.toLowerCase())
   ) || []
 
-  const filteredActive = employees?.filter(e => e.active && (
-    e.name.toLowerCase().includes(filters.search.toLowerCase()) || 
-    e.emp_code.toLowerCase().includes(filters.search.toLowerCase())
-  )) || []
+  const filteredActive = employees?.filter(e => 
+    e.active && 
+    (!filters.site || e.site === filters.site) &&
+    (e.name.toLowerCase().includes(filters.search.toLowerCase()) || 
+     e.emp_code.toLowerCase().includes(filters.search.toLowerCase()))
+  ) || []
 
 
 
   const activeColumns = [
+    { 
+      header: 'S.No', 
+      accessor: (_: any, index: number) => index + 1,
+      className: 'w-12 text-center font-bold text-slate-400'
+    },
     { header: t('employee.code'), accessor: 'emp_code' as const },
     { header: t('employee.name'), accessor: 'name' as const },
     { header: t('employee.designation'), accessor: 'designation' as const },

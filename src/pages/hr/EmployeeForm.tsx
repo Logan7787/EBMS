@@ -109,6 +109,21 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
               <label className="text-sm font-semibold text-slate-700">{t('employee.rate')}</label>
               <input {...register('battaAmount', { valueAsNumber: true })} type="number" className="w-full px-4 py-2 border rounded-lg text-sm" />
             </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Grade</label>
+              <input {...register('grade')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="e.g., G1" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Category Code</label>
+              <input {...register('catgCode')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="e.g., CAT-A" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Grade Code</label>
+              <input {...register('gradeCode')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="e.g., GC-01" />
+            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700">Role</label>
