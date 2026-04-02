@@ -10,6 +10,8 @@ import { useAuthStore } from '../../stores/authStore'
 import { Clock, Users, CheckCircle, ArrowRight, Send, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { useEffect } from 'react'
+import { MissingBattaAlert } from '../../components/shared/MissingBattaAlert'
+import { useMyBattaEntries } from '../../hooks/useBatta'
 
 const container = {
   hidden: { opacity: 0 },
@@ -32,6 +34,7 @@ export default function ManagerDashboard() {
   const { data: pendingEntries } = usePendingTeamBatta()
   const { data: employees } = useEmployees()
   const { data: myStats, isLoading: statsLoading } = useBattaStats()
+  const { data: myRecent } = useMyBattaEntries()
 
   useEffect(() => {
     if (!statsLoading && myStats && myStats.pending > 0) {
@@ -90,6 +93,8 @@ export default function ManagerDashboard() {
         title={t('nav.dashboard')} 
         subtitle="Manage your team's fieldwork and allowances."
       />
+
+      <MissingBattaAlert entries={myRecent} />
 
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, i) => (

@@ -12,6 +12,7 @@ import { Users, UserCheck, Clock, Calendar, ArrowRight, Send, TrendingUp } from 
 import { toast } from 'sonner'
 import { useEffect } from 'react'
 import { formatDate } from '../../lib/utils'
+import { MissingBattaAlert } from '../../components/shared/MissingBattaAlert'
 
 const container = {
   hidden: { opacity: 0 },
@@ -124,6 +125,8 @@ export default function HRDashboard() {
         title={t('nav.dashboard')} 
         subtitle="Welcome back to the E-Batta HR control panel."
       />
+
+      <MissingBattaAlert entries={allRecent} />
 
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (

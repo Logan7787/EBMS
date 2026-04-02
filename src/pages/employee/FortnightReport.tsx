@@ -22,6 +22,8 @@ export default function FortnightReport() {
   const endDay = period === '1-15' ? 15 : lastDay;
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize today to midnight for comparison
+
   const periodDates: string[] = [];
   for (let day = startDay; day <= endDay; day++) {
     const m = String(month).padStart(2, '0');
@@ -38,12 +40,27 @@ export default function FortnightReport() {
     const dateObj = new Date(y, m - 1, d);
     const isSunday = dateObj.getDay() === 0;
     const isFuture = dateObj > today;
+    const isToday = dateObj.getTime() === today.getTime();
+
+    let status = 'missing';
+    let label = 'MISSING';
+
+    if (isFuture) {
+      status = 'upcoming';
+      label = 'UPCOMING';
+    } else if (isToday) {
+      status = 'pending_submission';
+      label = 'PENDING';
+    } else if (isSunday) {
+      status = 'sunday';
+      label = 'SUNDAY';
+    }
 
     return {
       date: dateStr,
       type: 'gap',
-      status: isFuture ? 'upcoming' : (isSunday ? 'sunday' : 'missing'),
-      label: isFuture ? 'Upcoming' : (isSunday ? 'SUNDAY' : 'MISSING')
+      status,
+      label
     };
   });
 
@@ -66,6 +83,7 @@ export default function FortnightReport() {
         return (
           <span className={cn(
             "px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-tighter w-fit",
+            item.status === 'pending_submission' ? "bg-amber-50 text-amber-600" :
             item.status === 'sunday' ? "bg-slate-100 text-slate-500" : 
             item.status === 'missing' ? "bg-red-50 text-red-600" : "bg-slate-50 text-slate-400"
           )}>

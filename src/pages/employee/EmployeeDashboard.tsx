@@ -9,6 +9,7 @@ import { useBattaStats, useMyBattaEntries } from '../../hooks/useBatta'
 import { useAuthStore } from '../../stores/authStore'
 import { Wallet, Clock, CheckCircle, Calendar } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
+import { MissingBattaAlert } from '../../components/shared/MissingBattaAlert'
 
 export default function EmployeeDashboard() {
   const { t } = useTranslation()
@@ -71,6 +72,8 @@ export default function EmployeeDashboard() {
         title={t('nav.dashboard')} 
         subtitle={`Welcome back, ${user?.name}. Here's your shift summary.`}
       />
+
+      <MissingBattaAlert entries={recent} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {dashboardStats.map((stat, i) => (
