@@ -5,13 +5,28 @@ import { DataTable } from '../../components/shared/DataTable'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { useMyBattaEntries } from '../../hooks/useBatta'
 import { BattaStatus } from '../../types'
-import { formatDate } from '../../lib/utils'
-import { cn } from '../../lib/utils'
+import { formatDate, getMonthOptions, getYearOptions, cn } from '../../lib/utils'
+import { Search } from 'lucide-react'
 
 export default function EmployeeInbox() {
   const { t } = useTranslation()
   const [filter, setFilter] = useState<BattaStatus | 'all'>('all')
-  const { data: entries, isLoading } = useMyBattaEntries(filter === 'all' ? undefined : filter)
+  const [filters, setFilters] = useState({
+    month: (new Date().getMonth() + 1).toString(),
+    year: new Date().getFullYear().toString(),
+    period: '',
+    search: ''
+  })
+  
+  const { data: entries, isLoading } = useMyBattaEntries(
+    filter === 'all' ? undefined : filter,
+    {
+      month: Number(filters.month),
+      year: Number(filters.year),
+      period: filters.period || undefined,
+      search: filters.search
+    }
+  )
 
   const tabs: { label: string; value: BattaStatus | 'all' }[] = [
     { label: 'All', value: 'all' },
@@ -63,21 +78,68 @@ export default function EmployeeInbox() {
         subtitle="Track the status of your submitted field allowance requests."
       />
 
-      <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-fit">
-        {tabs.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={cn(
-              "px-6 py-2 rounded-xl text-sm font-bold transition-all",
-              filter === tab.value 
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" 
-                : "text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-fit">
+          {tabs.map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setFilter(tab.value)}
+              className={cn(
+                "px-6 py-2 rounded-xl text-sm font-bold transition-all",
+                filter === tab.value 
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" 
+                  : "text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex-1 md:flex-initial">
+          <div className="flex-1 min-w-[200px] relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search particulars..." 
+              value={filters.search}
+              onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            />
+          </div>
+          
+          <div className="w-32">
+            <select 
+              value={filters.month} 
+              onChange={e => setFilters(prev => ({ ...prev, month: e.target.value }))}
+              className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              {getMonthOptions().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+          </div>
+
+          <div className="w-32">
+            <select 
+              value={filters.year} 
+              onChange={e => setFilters(prev => ({ ...prev, year: e.target.value }))}
+              className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              {getYearOptions().map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
+            </select>
+          </div>
+
+          <div className="w-40">
+            <select 
+              value={filters.period} 
+              onChange={e => setFilters(prev => ({ ...prev, period: e.target.value }))}
+              className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              <option value="">Full Month</option>
+              <option value="1">1st - 15th</option>
+              <option value="2">16th - End</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <DataTable 

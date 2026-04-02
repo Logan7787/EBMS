@@ -3,10 +3,10 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { BattaEntry, BattaStatus } from '../types'
 
-export function useMyBattaEntries(status?: BattaStatus) {
+export function useMyBattaEntries(status?: BattaStatus, filters?: { month?: number; year?: number; period?: string; search?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
-    queryKey: ['batta-entries', user?.id, status],
+    queryKey: ['batta-entries', user?.id, status, filters],
     queryFn: async () => {
       let query = supabase
         .from('batta_entries')
@@ -22,9 +22,32 @@ export function useMyBattaEntries(status?: BattaStatus) {
         query = query.eq('status', status)
       }
 
+      if (filters?.month && filters?.year) {
+        const lastDay = new Date(filters.year, filters.month, 0).getDate()
+        let startDay = 1
+        let endDay = lastDay
+
+        if (filters.period === '1') endDay = 15
+        else if (filters.period === '2') startDay = 16
+
+        const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+        const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+        
+        query = query.gte('date', startDate).lte('date', endDate)
+      }
+
       const { data, error } = await query
       if (error) throw error
-      return data as BattaEntry[]
+      
+      let filteredData = data as BattaEntry[]
+      if (filters?.search) {
+        const s = filters.search.toLowerCase()
+        filteredData = filteredData.filter(d => 
+          d.particulars.toLowerCase().includes(s)
+        )
+      }
+
+      return filteredData
     },
     enabled: !!user?.id,
   })
