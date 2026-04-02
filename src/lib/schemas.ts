@@ -30,6 +30,7 @@ export const battaSubmitSchema = z.object({
 export const employeeSchema = z.object({
   empCode: z.string().min(2).max(20),
   name: z.string().min(2).max(100),
+  nameTa: z.string().optional().or(z.literal('')),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   password: z.string().min(8).optional(),
   designation: z.string().optional(),

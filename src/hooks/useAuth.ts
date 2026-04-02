@@ -36,6 +36,7 @@ export function useAuth() {
       managerId: profile.manager_id,
       email: profile.email || data.user.email,
       designation: profile.designation || '',
+      nameTa: profile.name_ta || null,
     })
     
     return profile.role

@@ -11,9 +11,10 @@ import { toast } from 'sonner'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Send, Calendar, MessageSquare, UserCheck, Loader2, SunMoon, Clock, Mic, MicOff } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { getDisplayName } from '../../lib/userUtils'
 
 export default function SubmitBatta() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
   const { data: managers } = useManagers()
@@ -278,7 +279,7 @@ export default function SubmitBatta() {
             >
               <option value="">{t('actions.add')}...</option>
               {managers?.filter((m: any) => m.id !== user?.id).map((m: any) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>{getDisplayName(m, i18n.language)}</option>
               ))}
             </select>
             {errors.managerId && <p className="text-red-500 text-xs font-medium">{errors.managerId.message}</p>}

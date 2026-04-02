@@ -12,6 +12,7 @@ interface UserState {
   managerId?: string
   email?: string
   designation?: string
+  nameTa?: string
 }
 
 interface AuthStore {

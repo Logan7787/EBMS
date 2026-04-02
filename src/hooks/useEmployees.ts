@@ -23,7 +23,7 @@ export function useManagers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name')
+        .select('id, name, name_ta')
         .in('role', ['Manager', 'HR'])
         .eq('active', true)
         .order('name', { ascending: true })
@@ -44,6 +44,7 @@ export function useSaveEmployee() {
         name: rest.name,
         role: rest.role,
         designation: rest.designation,
+        name_ta: rest.nameTa || null,
         grade: rest.grade,
         catg_code: rest.catgCode,
         grade_code: rest.gradeCode,

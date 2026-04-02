@@ -5,10 +5,11 @@ import { DataTable } from '../../components/shared/DataTable'
 import { useMyBattaEntries } from '../../hooks/useBatta'
 import { useAuthStore } from '../../stores/authStore'
 import { getMonthOptions, getYearOptions, formatDate, cn } from '../../lib/utils'
+import { getDisplayName } from '../../lib/userUtils'
 import { Printer, Calendar, FileText } from 'lucide-react'
 
 export default function FortnightReport() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const user = useAuthStore(s => s.user)
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString())
   const [year, setYear] = useState(new Date().getFullYear().toString())
@@ -139,7 +140,7 @@ export default function FortnightReport() {
     { header: 'Approved By', accessor: (item: any) => {
       if (item.type === 'gap') return '-';
       const approver = Array.isArray(item.approver) ? item.approver[0] : item.approver;
-      return approver?.name || '-';
+      return getDisplayName(approver, i18n.language) || '-';
     }}
   ]
 
@@ -217,7 +218,7 @@ export default function FortnightReport() {
             <p className="text-slate-500 font-bold text-sm tracking-widest mt-1 uppercase">Allowance Report</p>
           </div>
           <div className="text-right">
-            <p className="font-bold text-slate-900">{user?.name}</p>
+            <p className="font-bold text-slate-900">{getDisplayName(user, i18n.language)}</p>
             <p className="text-xs text-slate-500">{user?.empCode} • {user?.site}</p>
           </div>
         </div>

@@ -4,9 +4,10 @@ import { Check, X, AlertCircle, Coins, SunMoon, RotateCcw, History, Search } fro
 import { formatDate, cn, getMonthOptions, getYearOptions } from '../../lib/utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { getDisplayName } from '../../lib/userUtils'
 
 export default function ManagerInbox() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [filters, setFilters] = useState({
     month: (new Date().getMonth() + 1).toString(),
     year: new Date().getFullYear().toString(),
@@ -148,58 +149,54 @@ export default function ManagerInbox() {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+      <div className="flex flex-wrap items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex-1 min-w-[240px] relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name or code..." 
+            placeholder="Search name or emp code..." 
             value={filters.search}
             onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           />
         </div>
         
-        <div className="w-36">
+        <div className="w-32">
           <select 
-            value={filters.month}
+            value={filters.month} 
             onChange={e => setFilters(prev => ({ ...prev, month: e.target.value }))}
-            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
           >
-            {getMonthOptions().map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="w-28">
-          <select 
-            value={filters.year}
-            onChange={e => setFilters(prev => ({ ...prev, year: e.target.value }))}
-            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
-          >
-            {getYearOptions().map(y => (
-              <option key={y.value} value={y.value}>{y.label}</option>
-            ))}
+            {getMonthOptions().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
         </div>
 
         <div className="w-32">
           <select 
-            value={filters.period}
+            value={filters.year} 
+            onChange={e => setFilters(prev => ({ ...prev, year: e.target.value }))}
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            {getYearOptions().map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
+          </select>
+        </div>
+
+        <div className="w-40">
+          <select 
+            value={filters.period} 
             onChange={e => setFilters(prev => ({ ...prev, period: e.target.value }))}
-            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             <option value="">Full Month</option>
-            <option value="1">Period 1 (1-15)</option>
-            <option value="2">Period 2 (16-31)</option>
+            <option value="1-15">1st - 15th</option>
+            <option value="16-end">16th - End</option>
           </select>
         </div>
       </div>
 
       {activeTab === 'pending' && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {pending?.length === 0 ? (
+          {pendingCount === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-dashed border-slate-200">
               <Check className="text-emerald-500 mx-auto mb-4" size={48} />
               <h3 className="text-slate-900 font-bold text-lg mb-1">{t('messages.noData')}</h3>
@@ -222,13 +219,13 @@ export default function ManagerInbox() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {pending?.map((entry) => {
+                      {pending?.map((entry: any) => {
                         const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                         return (
                           <tr key={entry.id} className="hover:bg-slate-50 transition-colors group">
                             <td className="px-5 py-4">
                               <div className="flex flex-col">
-                                <span className="font-bold text-slate-900">{emp?.name || 'Unknown'}</span>
+                                <span className="font-bold text-slate-900">{getDisplayName(emp, i18n.language) || 'Unknown'}</span>
                                 <span className="text-[10px] font-bold text-slate-400">{emp?.emp_code || '---'}</span>
                               </div>
                             </td>
@@ -276,7 +273,7 @@ export default function ManagerInbox() {
 
               {/* Mobile Card List View */}
               <div className="md:hidden space-y-4">
-                {pending?.map((entry) => {
+                {pending?.map((entry: any) => {
                   const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                   const stdAmount = (entry.category === 'Work' || !entry.category) ? (emp?.batta_amount || 0) : 0;
                   return (
@@ -284,7 +281,7 @@ export default function ManagerInbox() {
                       <div className="p-5 flex flex-col gap-3">
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col">
-                            <span className="font-black text-slate-900 text-lg leading-tight">{emp?.name || 'Unknown'}</span>
+                            <span className="font-black text-slate-900 text-lg leading-tight">{getDisplayName(emp, i18n.language) || 'Unknown'}</span>
                             <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">{emp?.emp_code || '---'} • {emp?.designation || '-'}</span>
                           </div>
                           <div className="bg-indigo-50 px-3 py-1.5 rounded-xl flex flex-col items-end">
@@ -374,11 +371,11 @@ export default function ManagerInbox() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-600">
-                      {recent?.map((entry) => {
+                      {recent?.map((entry: any) => {
                         const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                         return (
                           <tr key={entry.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-4 font-bold text-slate-900">{emp?.name}</td>
+                            <td className="px-5 py-4 font-bold text-slate-900">{getDisplayName(emp, i18n.language)}</td>
                             <td className="px-5 py-4">{formatDate(entry.date)}</td>
                             <td className="px-5 py-4 uppercase text-[10px] font-black tracking-widest">
                               <span className={cn(
@@ -407,12 +404,12 @@ export default function ManagerInbox() {
 
               {/* Mobile View */}
               <div className="md:hidden space-y-3">
-                {recent?.map((entry) => {
+                {recent?.map((entry: any) => {
                   const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                   return (
                     <div key={entry.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 leading-tight">{emp?.name}</span>
+                        <span className="font-bold text-slate-900 leading-tight">{getDisplayName(emp, i18n.language)}</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase">{formatDate(entry.date)}</span>
                         <div className="mt-1">
                           <span className={cn(
@@ -502,47 +499,25 @@ export default function ManagerInbox() {
             <p className="text-slate-500 text-sm mb-6">Enter the final modified amount this employee will receive.</p>
             
             <div className="relative mb-6">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
               <input
                 type="number"
                 value={fineAmount}
-                onChange={(e) => setFineAmount(e.target.value ? Number(e.target.value) : '')}
-                placeholder="Amount"
-                min="0"
-                className="w-full pl-8 pr-4 py-4 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 text-xl font-bold"
+                onChange={(e) => setFineAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="Enter amount..."
+                className="w-full pl-10 pr-4 py-4 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400"
                 autoFocus
               />
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-8">
-              {[0, 0.5, 0.75].map((ratio) => {
-                const entry = pending?.find(e => e.id === selectedItem.id) || recent?.find(e => e.id === selectedItem.id);
-                const emp = entry ? (Array.isArray(entry.employee) ? entry.employee[0] : entry.employee) : null;
-                const stdBatta = emp?.batta_amount || 0;
-                const calculated = Math.round(stdBatta * ratio);
-                
-                return (
-                  <button
-                    key={ratio}
-                    type="button"
-                    onClick={() => setFineAmount(calculated)}
-                    className="py-2.5 rounded-xl border border-amber-100 bg-amber-50/50 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-all active:scale-95"
-                  >
-                    {ratio === 0 ? 'Zero' : `${ratio * 100}%`}
-                    <span className="block text-xs font-black">₹{calculated}</span>
-                  </button>
-                );
-              })}
             </div>
 
             <div className="flex gap-3 justify-end">
               <button onClick={() => setSelectedItem(null)} className="px-5 py-2 font-bold text-slate-500">Cancel</button>
               <button 
                 onClick={handleAction}
-                disabled={isSubmitting || fineAmount === '' || Number(fineAmount) < 0}
-                className="px-6 py-3 font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 rounded-xl shadow-lg shadow-amber-100"
+                disabled={isSubmitting || fineAmount === ''}
+                className="px-6 py-2 font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-xl"
               >
-                {isSubmitting ? 'Saving...' : `Approve (₹${fineAmount || 0})`}
+                Save Adjustment
               </button>
             </div>
           </div>

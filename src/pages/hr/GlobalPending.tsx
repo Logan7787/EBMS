@@ -8,9 +8,10 @@ import { Search, Loader2, Clock, AlertCircle, Copy, Check, UserCheck } from 'luc
 import { cn, getMonthOptions, getYearOptions, formatDate } from '../../lib/utils'
 import { toast } from 'sonner'
 import ReassignManagerDialog from '../../components/hr/ReassignManagerDialog'
+import { getDisplayName } from '../../lib/userUtils'
 
 export default function GlobalPending() {
-  useTranslation()
+  const { i18n } = useTranslation()
   const { data: employees } = useEmployees()
   const [filters, setFilters] = useState({
     month: (new Date().getMonth() + 1).toString(),
@@ -33,7 +34,9 @@ export default function GlobalPending() {
   const sites = Array.from(new Set(employees?.map(e => e.site).filter(Boolean)))
 
   const copyFollowUp = (entry: any) => {
-    const message = `Hi ${entry.manager?.name}, approval is pending for ${entry.employee?.name}'s batta entry for ${formatDate(entry.date)}. Please check and action.`
+    const managerName = getDisplayName(entry.manager, i18n.language)
+    const employeeName = getDisplayName(entry.employee, i18n.language)
+    const message = `Hi ${managerName}, approval is pending for ${employeeName}'s batta entry for ${formatDate(entry.date)}. Please check and action.`
     navigator.clipboard.writeText(message)
     toast.success("Follow-up message copied to clipboard!")
   }
@@ -43,7 +46,7 @@ export default function GlobalPending() {
       header: 'Employee', 
       accessor: (item: any) => (
         <div className="flex flex-col">
-          <span className="font-bold text-slate-900">{item.employee?.name}</span>
+          <span className="font-bold text-slate-900">{getDisplayName(item.employee, i18n.language)}</span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.employee?.emp_code}</span>
         </div>
       )
@@ -81,7 +84,7 @@ export default function GlobalPending() {
       header: 'Assigned Manager', 
       accessor: (item: any) => (
         <div className="flex flex-col">
-          <span className="font-bold text-indigo-600">{item.manager?.name || 'N/A'}</span>
+          <span className="font-bold text-indigo-600">{getDisplayName(item.manager, i18n.language) || 'N/A'}</span>
           <span className="text-[10px] font-medium text-slate-400 italic">Follow-up required</span>
         </div>
       )

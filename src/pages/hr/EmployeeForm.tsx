@@ -21,6 +21,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
     defaultValues: employee ? {
       empCode: employee.emp_code,
       name: employee.name,
+      nameTa: employee.name_ta || '',
       email: employee.email || '',
       designation: employee.designation || '',
       grade: employee.grade || '',
@@ -34,6 +35,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
     } : {
       empCode: '',
       name: '',
+      nameTa: '',
       email: '',
       site: '',
       battaAmount: 0,
@@ -78,6 +80,12 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
               <label className="text-sm font-semibold text-slate-700">{t('employee.name')}</label>
               <input {...register('name')} className="w-full px-4 py-2 border rounded-lg text-sm" />
               {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Name (Tamil)</label>
+              <input {...register('nameTa')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="பெயர் (தமிழ்)" />
+              {errors.nameTa && <p className="text-red-500 text-xs">{errors.nameTa.message}</p>}
             </div>
 
             <div className="space-y-2">
