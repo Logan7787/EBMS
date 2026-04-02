@@ -14,6 +14,7 @@ import EmployeeInbox from './pages/employee/EmployeeInbox'
 import ManagerInbox from './pages/manager/ManagerInbox'
 import FortnightReport from './pages/employee/FortnightReport'
 import ProfilePage from './pages/employee/ProfilePage'
+import GlobalPending from './pages/hr/GlobalPending'
 import { useAuthStore } from './stores/authStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
@@ -132,6 +133,7 @@ function App() {
         <Route path="/hr" element={<PrivateRoute roles={['HR']}><HRDashboard /></PrivateRoute>} />
         <Route path="/hr/employees" element={<PrivateRoute roles={['HR']}><EmployeeList /></PrivateRoute>} />
         <Route path="/hr/reports" element={<PrivateRoute roles={['HR']}><HRReports /></PrivateRoute>} />
+        <Route path="/hr/pending" element={<PrivateRoute roles={['HR']}><GlobalPending /></PrivateRoute>} />
         
         {/* MANAGER ROUTES */}
         <Route path="/manager" element={<PrivateRoute roles={['Manager']}><ManagerDashboard /></PrivateRoute>} />

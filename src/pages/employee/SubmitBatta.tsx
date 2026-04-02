@@ -277,7 +277,7 @@ export default function SubmitBatta() {
               )}
             >
               <option value="">{t('actions.add')}...</option>
-              {managers?.map((m: any) => (
+              {managers?.filter((m: any) => m.id !== user?.id).map((m: any) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>

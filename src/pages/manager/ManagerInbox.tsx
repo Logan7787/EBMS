@@ -1,21 +1,37 @@
 import { useTranslation } from 'react-i18next'
 import { usePendingTeamBatta, useUpdateBattaStatus, useRecentTeamDecisions } from '../../hooks/useBatta'
-import { Check, X, AlertCircle, Coins, SunMoon, RotateCcw, History } from 'lucide-react'
-import { formatDate, cn } from '../../lib/utils'
+import { Check, X, AlertCircle, Coins, SunMoon, RotateCcw, History, Search } from 'lucide-react'
+import { formatDate, cn, getMonthOptions, getYearOptions } from '../../lib/utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
 
 export default function ManagerInbox() {
   const { t } = useTranslation()
-  const { data: pending, isLoading } = usePendingTeamBatta()
-  const { data: recent, isLoading: recentLoading } = useRecentTeamDecisions()
-  const { mutateAsync: updateStatus } = useUpdateBattaStatus()
-  
+  const [filters, setFilters] = useState({
+    month: (new Date().getMonth() + 1).toString(),
+    year: new Date().getFullYear().toString(),
+    period: '',
+    search: ''
+  })
   const [selectedItem, setSelectedItem] = useState<{ id: string; action: 'approved' | 'rejected' | 'fined' } | null>(null)
   const [activeTab, setActiveTab] = useState<'pending' | 'recent'>('pending')
   const [rejectReason, setRejectReason] = useState('')
   const [fineAmount, setFineAmount] = useState<number | ''>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { data: pending, isLoading } = usePendingTeamBatta({
+    month: Number(filters.month),
+    year: Number(filters.year),
+    period: filters.period || undefined,
+    search: filters.search
+  })
+  const { data: recent, isLoading: recentLoading } = useRecentTeamDecisions({
+    month: Number(filters.month),
+    year: Number(filters.year),
+    period: filters.period || undefined,
+    search: filters.search
+  })
+  const { mutateAsync: updateStatus } = useUpdateBattaStatus()
 
   const pendingCount = pending?.length || 0
   const recentCount = recent?.length || 0
@@ -129,6 +145,55 @@ export default function ManagerInbox() {
               </span>
             )}
           </button>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Search by name or code..." 
+            value={filters.search}
+            onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+          />
+        </div>
+        
+        <div className="w-36">
+          <select 
+            value={filters.month}
+            onChange={e => setFilters(prev => ({ ...prev, month: e.target.value }))}
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+          >
+            {getMonthOptions().map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="w-28">
+          <select 
+            value={filters.year}
+            onChange={e => setFilters(prev => ({ ...prev, year: e.target.value }))}
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+          >
+            {getYearOptions().map(y => (
+              <option key={y.value} value={y.value}>{y.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="w-32">
+          <select 
+            value={filters.period}
+            onChange={e => setFilters(prev => ({ ...prev, period: e.target.value }))}
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+          >
+            <option value="">Full Month</option>
+            <option value="1">Period 1 (1-15)</option>
+            <option value="2">Period 2 (16-31)</option>
+          </select>
         </div>
       </div>
 

@@ -30,12 +30,12 @@ export function useMyBattaEntries(status?: BattaStatus) {
   })
 }
 
-export function usePendingTeamBatta() {
+export function usePendingTeamBatta(filters?: { month?: number; year?: number; period?: string; search?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
-    queryKey: ['pending-batta', user?.id],
+    queryKey: ['pending-batta', user?.id, filters],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('batta_entries')
         .select(`
           *,
@@ -45,22 +45,46 @@ export function usePendingTeamBatta() {
         .eq('status', 'pending')
         .order('date', { ascending: false })
 
+      if (filters?.month && filters?.year) {
+        // Calculate the date range based on filters
+        const lastDay = new Date(filters.year, filters.month, 0).getDate()
+        let startDay = 1
+        let endDay = lastDay
+
+        if (filters.period === '1') endDay = 15
+        else if (filters.period === '2') startDay = 16
+
+        // Correct format for date string: YYYY-MM-DD
+        const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+        const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+        
+        query = query.gte('date', startDate).lte('date', endDate)
+      }
+
+      const { data, error } = await query
       if (error) throw error
-      return data as BattaEntry[]
+
+      let filteredData = data as BattaEntry[]
+      if (filters?.search) {
+        const s = filters.search.toLowerCase()
+        filteredData = filteredData.filter(d => 
+          d.employee?.name.toLowerCase().includes(s) || 
+          d.employee?.emp_code.toLowerCase().includes(s)
+        )
+      }
+
+      return filteredData
     },
     enabled: !!user?.id && (user?.role === 'Manager' || user?.role === 'HR'),
   })
 }
 
-export function useRecentTeamDecisions() {
+export function useRecentTeamDecisions(filters?: { month?: number; year?: number; period?: string; search?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
-    queryKey: ['recent-team-decisions', user?.id],
+    queryKey: ['recent-team-decisions', user?.id, filters],
     queryFn: async () => {
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-      const { data, error } = await supabase
+      let query = supabase
         .from('batta_entries')
         .select(`
           *,
@@ -68,11 +92,37 @@ export function useRecentTeamDecisions() {
         `)
         .eq('manager_id', user?.id)
         .neq('status', 'pending')
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
 
+      if (filters?.month && filters?.year) {
+        // Calculate the date range based on filters
+        const lastDay = new Date(filters.year, filters.month, 0).getDate()
+        let startDay = 1
+        let endDay = lastDay
+
+        if (filters.period === '1') endDay = 15
+        else if (filters.period === '2') startDay = 16
+
+        // Correct format for date string: YYYY-MM-DD
+        const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+        const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+        
+        query = query.gte('date', startDate).lte('date', endDate)
+      }
+
+      const { data, error } = await query
       if (error) throw error
-      return data as BattaEntry[]
+
+      let filteredData = data as BattaEntry[]
+      if (filters?.search) {
+        const s = filters.search.toLowerCase()
+        filteredData = filteredData.filter(d => 
+          d.employee?.name.toLowerCase().includes(s) || 
+          d.employee?.emp_code.toLowerCase().includes(s)
+        )
+      }
+
+      return filteredData
     },
     enabled: !!user?.id && (user?.role === 'Manager' || user?.role === 'HR'),
   })
@@ -148,6 +198,24 @@ export function useUpdateBattaStatus() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pending-batta'] })
       qc.invalidateQueries({ queryKey: ['recent-team-decisions'] })
+    },
+  })
+}
+
+export function useUpdateBattaManager() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, managerId }: { id: string; managerId: string }) => {
+      const { error } = await supabase
+        .from('batta_entries')
+        .update({ manager_id: managerId })
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['global-pending-batta'] })
+      qc.invalidateQueries({ queryKey: ['pending-batta'] })
     },
   })
 }
@@ -335,6 +403,56 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       })
 
       return grouped
+    },
+    enabled: !!user?.id && user?.role === 'HR',
+  })
+}
+export function useGlobalPendingBatta(filters: { month: number; year: number; period?: string; site?: string; search?: string }) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['global-pending-batta', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          manager:users!manager_id (name, emp_code)
+        `)
+        .neq('status', 'approved')
+        .order('date', { ascending: false })
+
+      const { data, error } = await query
+      if (error) throw error
+
+      // Filter by month/year/period
+      let filtered = data.filter(d => {
+        const dDate = new Date(d.date)
+        const isMonthMatch = (dDate.getMonth() + 1) === filters.month && dDate.getFullYear() === filters.year
+        if (!isMonthMatch) return false
+        
+        if (filters.period) {
+          const day = dDate.getDate()
+          if (filters.period === '1') return day <= 15
+          if (filters.period === '2') return day >= 16
+        }
+        return true
+      })
+
+      if (filters.site) {
+        filtered = filtered.filter(d => d.employee?.site === filters.site)
+      }
+
+      if (filters.search) {
+        const s = filters.search.toLowerCase()
+        filtered = filtered.filter(d => 
+          d.employee?.name.toLowerCase().includes(s) || 
+          d.employee?.emp_code.toLowerCase().includes(s) ||
+          d.manager?.name.toLowerCase().includes(s)
+        )
+      }
+
+      return filtered as (BattaEntry & { manager: { name: string; emp_code: string } })[]
     },
     enabled: !!user?.id && user?.role === 'HR',
   })

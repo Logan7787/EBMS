@@ -11,7 +11,8 @@ import {
   IndianRupee,
   Menu,
   X,
-  FileText
+  FileText,
+  Clock
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useAuth } from '../../hooks/useAuth'
@@ -76,6 +77,12 @@ export function Sidebar() {
       label: "Global Reports", 
       path: '/hr/reports', 
       icon: BarChart3, 
+      roles: ['HR']
+    },
+    { 
+      label: "Global Pending", 
+      path: '/hr/pending', 
+      icon: Clock, 
       roles: ['HR']
     },
     { 
