@@ -12,7 +12,7 @@ export function useMyBattaEntries(status?: BattaStatus, filters?: { month?: numb
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount),
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
           approver:users!approved_by (name)
         `)
         .eq('emp_id', user?.id)
@@ -62,7 +62,7 @@ export function usePendingTeamBatta(filters?: { month?: number; year?: number; p
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount)
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation)
         `)
         .eq('manager_id', user?.id)
         .eq('status', 'pending')
@@ -111,7 +111,7 @@ export function useRecentTeamDecisions(filters?: { month?: number; year?: number
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount)
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation)
         `)
         .eq('manager_id', user?.id)
         .neq('status', 'pending')

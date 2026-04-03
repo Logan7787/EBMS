@@ -71,6 +71,12 @@ export default function EmployeeInbox() {
     { header: 'Amount', accessor: (item: any) => {
       const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
       const defaultAmount = emp?.batta_amount || 0;
+      const isWork = item.category === 'Work' || !item.category;
+      
+      if (!isWork) {
+        return <span className="text-slate-400 font-bold italic">₹0 (Non-Work)</span>
+      }
+
       if (item.status === 'approved' && item.approved_amount !== undefined && item.approved_amount !== null) {
         if (item.approved_amount < defaultAmount) {
           return (

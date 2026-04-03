@@ -91,9 +91,14 @@ export default function GlobalPending() {
     },
     { 
       header: 'Amount', 
-      accessor: (item: any) => (
-        <span className="font-black text-slate-900">₹{item.employee?.batta_amount || 0}</span>
-      )
+      accessor: (item: any) => {
+        const isWork = item.category === 'Work' || !item.category;
+        return (
+          <span className={cn("font-black", isWork ? "text-slate-900" : "text-slate-400 italic")}>
+            ₹{isWork ? (item.employee?.batta_amount || 0) : 0}
+          </span>
+        )
+      }
     },
     {
       header: 'Action',

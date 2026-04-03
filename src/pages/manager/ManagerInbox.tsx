@@ -419,7 +419,7 @@ export default function ManagerInbox() {
                               </span>
                             </td>
                             <td className="px-5 py-4 text-right font-black">
-                              ₹{entry.approved_amount ?? emp?.batta_amount}
+                              ₹{(entry.category === 'Work' || !entry.category) ? (entry.approved_amount ?? emp?.batta_amount) : 0}
                             </td>
                             <td className="px-5 py-4">
                               <div className="flex justify-center items-center gap-2">
@@ -456,7 +456,7 @@ export default function ManagerInbox() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <span className="text-[9px] font-black uppercase text-slate-400 block leading-none mb-1">Final</span>
-                          <span className="text-sm font-black text-slate-900 block leading-none">₹{entry.approved_amount ?? emp?.batta_amount}</span>
+                          <span className="text-sm font-black text-slate-900 block leading-none">₹{(entry.category === 'Work' || !entry.category) ? (entry.approved_amount ?? emp?.batta_amount) : 0}</span>
                         </div>
                         <div className="flex items-center gap-1">
                            <button onClick={() => handleReset(entry.id)} className="p-2 text-slate-400 hover:bg-indigo-50 rounded-xl transition-all"><RotateCcw size={18} /></button>
