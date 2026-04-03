@@ -1,0 +1,88 @@
+{
+  "app": { "name": "ई-भत्ता", "tagline": "फील्ड भत्ता प्रबंधन" },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "submit": "भत्ता जमा करें",
+    "inbox": "इनबॉक्स",
+    "report": "रिपोर्ट",
+    "profile": "प्रोफ़ाइल",
+    "employees": "कर्मचारी",
+    "managers": "प्रबंधक",
+    "team": "मेरी टीम",
+    "logout": "लॉग आउट",
+    "submitMyBatta": "मेरा भत्ता जमा करें"
+  },
+  "status": {
+    "pending": "लंबित",
+    "approved": "स्वीकृत",
+    "rejected": "अस्वीकृत"
+  },
+  "batta": {
+    "date": "तारीख",
+    "particulars": "विवरण",
+    "manager": "रिपोर्टिंग प्रबंधक",
+    "amount": "भत्ता राशि",
+    "submit": "एंट्री जमा करें",
+    "submitted": "एंट्री सफलतापूर्वक जमा की गई",
+    "duplicateDate": "इस तारीख के लिए एंट्री पहले से मौजूद है",
+    "futureDate": "भविष्य की तारीखें जमा नहीं की जा सकतीं",
+    "recentEntries": "हालिया भत्ता प्रविष्टियां",
+    "totalAmount": "कुल राशि",
+    "days": "दिन",
+    "fortnight": "पखवाड़ा"
+  },
+  "employee": {
+    "code": "कर्मचारी कोड",
+    "name": "नाम",
+    "designation": "पद",
+    "site": "साइट",
+    "grade": "ग्रेड",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय",
+    "details": "कर्मचारी विवरण",
+    "rate": "भत्ता दर"
+  },
+  "auth": {
+    "signIn": "साइन इन करें",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "signingIn": "साइन इन हो रहा है...",
+    "errorInactive": "खाता निष्क्रिय है। एचआर से संपर्क करें।"
+  },
+  "hr": {
+    "employees": "कर्मचारी",
+    "totalEmployees": "कुल कर्मचारी",
+    "activeEmployees": "सक्रिय कर्मचारी",
+    "pendingApprovals": "लंबित स्वीकृतियां",
+    "thisMonthEntries": "इस महीने की प्रविष्टियां",
+    "addEmployee": "कर्मचारी जोड़ें",
+    "editEmployee": "कर्मचारी संपादित करें",
+    "bulkUpload": "थोक अपलोड"
+  },
+  "manager": {
+    "teamMembers": "टीम के सदस्य",
+    "approvedThisMonth": "इस महीने स्वीकृत",
+    "viewInbox": "इनबॉक्स देखें",
+    "myTeam": "मेरी टीम"
+  },
+  "actions": {
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "approve": "स्वीकार करें",
+    "reject": "अस्वीकार करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "add": "नया जोड़ें",
+    "download": "CSV डाउनलोड करें",
+    "runReport": "रिपोर्ट चलाएं",
+    "print": "प्रिंट"
+  },
+  "messages": {
+    "confirmDelete": "क्या आप वाकई इसे हटाना चाहते हैं?",
+    "confirmDeactivate": "इस कर्मचारी को निष्क्रिय करें?",
+    "saved": "सफलतापूर्वक सहेजा गया",
+    "error": "कुछ गलत हो गया",
+    "noData": "कोई डेटा नहीं मिला",
+    "confirmAction": "क्या आप सुनिश्चित हैं?"
+  }
+}

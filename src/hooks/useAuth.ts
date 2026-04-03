@@ -37,6 +37,7 @@ export function useAuth() {
       email: profile.email || data.user.email,
       designation: profile.designation || '',
       nameTa: profile.name_ta || null,
+      nameHi: profile.name_hi || null,
     })
     
     return profile.role

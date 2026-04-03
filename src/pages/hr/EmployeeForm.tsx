@@ -5,6 +5,7 @@ import { employeeSchema, EmployeeFormValues } from '../../lib/schemas'
 import { useSaveEmployee, useManagers } from '../../hooks/useEmployees'
 import { toast } from 'sonner'
 import { X, Loader2 } from 'lucide-react'
+import { getDisplayName } from '../../lib/userUtils'
 
 interface EmployeeFormProps {
   employee?: any
@@ -12,7 +13,7 @@ interface EmployeeFormProps {
 }
 
 export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const saveEmployee = useSaveEmployee()
   const { data: managers } = useManagers()
 
@@ -22,6 +23,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
       empCode: employee.emp_code,
       name: employee.name,
       nameTa: employee.name_ta || '',
+      nameHi: employee.name_hi || '',
       email: employee.email || '',
       designation: employee.designation || '',
       grade: employee.grade || '',
@@ -36,6 +38,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
       empCode: '',
       name: '',
       nameTa: '',
+      nameHi: '',
       email: '',
       site: '',
       battaAmount: 0,
@@ -86,6 +89,12 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
               <label className="text-sm font-semibold text-slate-700">Name (Tamil)</label>
               <input {...register('nameTa')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="பெயர் (தமிழ்)" />
               {errors.nameTa && <p className="text-red-500 text-xs">{errors.nameTa.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Name (Hindi)</label>
+              <input {...register('nameHi')} className="w-full px-4 py-2 border rounded-lg text-sm bg-slate-50" placeholder="नाम (हिंदी)" />
+              {errors.nameHi && <p className="text-red-500 text-xs">{errors.nameHi.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -147,7 +156,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
               <select {...register('managerId')} className="w-full px-4 py-2 border rounded-lg text-sm bg-white">
                 <option value="">Select Manager</option>
                 {managers?.map((m: any) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m.id} value={m.id}>{getDisplayName(m, i18n.language)}</option>
                 ))}
               </select>
             </div>

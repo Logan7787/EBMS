@@ -8,8 +8,10 @@ export function TopBar() {
   const user = useAuthStore(s => s.user)
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'ta' : 'en'
-    i18n.changeLanguage(newLang)
+    const langs = ['en', 'ta', 'hi']
+    const currentIndex = langs.indexOf(i18n.language)
+    const nextIndex = (currentIndex + 1) % langs.length
+    i18n.changeLanguage(langs[nextIndex])
   }
 
   return (

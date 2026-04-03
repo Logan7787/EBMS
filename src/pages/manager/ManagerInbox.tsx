@@ -1,13 +1,16 @@
 import { useTranslation } from 'react-i18next'
-import { usePendingTeamBatta, useUpdateBattaStatus, useRecentTeamDecisions } from '../../hooks/useBatta'
-import { Check, X, AlertCircle, Coins, SunMoon, RotateCcw, History, Search } from 'lucide-react'
+import { usePendingTeamBatta, useUpdateBattaStatus, useRecentTeamDecisions, useDeleteBatta } from '../../hooks/useBatta'
+import { Check, X, AlertCircle, Coins, SunMoon, RotateCcw, History, Search, Edit2, Trash2 } from 'lucide-react'
 import { formatDate, cn, getMonthOptions, getYearOptions } from '../../lib/utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import { getDisplayName } from '../../lib/userUtils'
+import { useNavigate } from 'react-router-dom'
 
 export default function ManagerInbox() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const deleteBatta = useDeleteBatta()
   const [filters, setFilters] = useState({
     month: (new Date().getMonth() + 1).toString(),
     year: new Date().getFullYear().toString(),
@@ -43,6 +46,19 @@ export default function ManagerInbox() {
     try {
       await updateStatus({ id, status: 'pending' })
       toast.success("Entry reset to pending")
+    } catch (error) {
+      toast.error(t('messages.error'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete the entry for ${name}?`)) return
+    setIsSubmitting(true)
+    try {
+      await deleteBatta.mutateAsync(id)
+      toast.success("Entry deleted successfully")
     } catch (error) {
       toast.error(t('messages.error'))
     } finally {
@@ -257,10 +273,13 @@ export default function ManagerInbox() {
                               </span>
                             </td>
                             <td className="px-5 py-4">
-                              <div className="flex justify-center items-center gap-2">
+                              <div className="flex justify-center items-center gap-1.5">
                                 <button onClick={() => setSelectedItem({ id: entry.id, action: 'approved' })} className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all" title="Approve exactly as is"><Check size={18} /></button>
                                 <button onClick={() => { setFineAmount(emp?.batta_amount || 0); setSelectedItem({ id: entry.id, action: 'fined' }); }} className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-lg transition-all" title="Fine / Adjust Amount"><Coins size={18} /></button>
                                 <button onClick={() => setSelectedItem({ id: entry.id, action: 'rejected' })} className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all" title="Reject fully"><X size={18} /></button>
+                                <div className="w-px h-8 bg-slate-100 mx-1" />
+                                <button onClick={() => navigate(`/submit-batta?id=${entry.id}`)} className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-all" title="Edit Entry"><Edit2 size={18} /></button>
+                                <button onClick={() => handleDelete(entry.id, getDisplayName(emp, i18n.language))} className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all" title="Delete Entry"><Trash2 size={18} /></button>
                               </div>
                             </td>
                           </tr>
@@ -312,27 +331,41 @@ export default function ManagerInbox() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-px bg-slate-100 border-t border-slate-100 mt-auto">
+                      <div className="grid grid-cols-5 gap-px bg-slate-100 border-t border-slate-100 mt-auto">
                         <button 
                           onClick={() => setSelectedItem({ id: entry.id, action: 'approved' })}
-                          className="bg-white py-4 px-2 flex flex-col items-center justify-center gap-1 hover:bg-emerald-50 text-emerald-600 transition-all active:scale-95"
+                          className="bg-white py-4 px-1 flex flex-col items-center justify-center gap-1 hover:bg-emerald-50 text-emerald-600 transition-all active:scale-95"
                         >
-                          <Check size={20} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Approve</span>
+                          <Check size={18} />
+                          <span className="text-[8px] font-black uppercase tracking-tight">Approve</span>
                         </button>
                         <button 
                           onClick={() => { setFineAmount(emp?.batta_amount || 0); setSelectedItem({ id: entry.id, action: 'fined' }); }}
-                          className="bg-white py-4 px-2 flex flex-col items-center justify-center gap-1 hover:bg-amber-50 text-amber-600 transition-all active:scale-95"
+                          className="bg-white py-4 px-1 flex flex-col items-center justify-center gap-1 hover:bg-amber-50 text-amber-600 transition-all active:scale-95"
                         >
-                          <Coins size={20} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Adjust</span>
+                          <Coins size={18} />
+                          <span className="text-[8px] font-black uppercase tracking-tight">Adjust</span>
                         </button>
                         <button 
                           onClick={() => setSelectedItem({ id: entry.id, action: 'rejected' })}
-                          className="bg-white py-4 px-2 flex flex-col items-center justify-center gap-1 hover:bg-red-50 text-red-600 transition-all active:scale-95"
+                          className="bg-white py-4 px-1 flex flex-col items-center justify-center gap-1 hover:bg-red-50 text-red-600 transition-all active:scale-95"
                         >
-                          <X size={20} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Reject</span>
+                          <X size={18} />
+                          <span className="text-[8px] font-black uppercase tracking-tight">Reject</span>
+                        </button>
+                         <button 
+                          onClick={() => navigate(`/submit-batta?id=${entry.id}`)}
+                          className="bg-white py-4 px-1 flex flex-col items-center justify-center gap-1 hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95"
+                        >
+                          <Edit2 size={18} />
+                          <span className="text-[8px] font-black uppercase tracking-tight">Edit</span>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(entry.id, getDisplayName(emp, i18n.language))}
+                          className="bg-white py-4 px-1 flex flex-col items-center justify-center gap-1 hover:bg-rose-50 text-rose-600 transition-all active:scale-95"
+                        >
+                          <Trash2 size={18} />
+                          <span className="text-[8px] font-black uppercase tracking-tight">Delete</span>
                         </button>
                       </div>
                     </div>

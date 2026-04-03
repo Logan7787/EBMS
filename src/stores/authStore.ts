@@ -13,6 +13,7 @@ interface UserState {
   email?: string
   designation?: string
   nameTa?: string
+  nameHi?: string
 }
 
 interface AuthStore {

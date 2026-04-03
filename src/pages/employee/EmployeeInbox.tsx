@@ -3,13 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
 import { StatusBadge } from '../../components/shared/StatusBadge'
-import { useMyBattaEntries } from '../../hooks/useBatta'
+import { useMyBattaEntries, useDeleteBatta } from '../../hooks/useBatta'
 import { BattaStatus } from '../../types'
 import { formatDate, getMonthOptions, getYearOptions, cn } from '../../lib/utils'
-import { Search } from 'lucide-react'
+import { Search, Edit2, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 export default function EmployeeInbox() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const deleteBatta = useDeleteBatta()
   const [filter, setFilter] = useState<BattaStatus | 'all'>('all')
   const [filters, setFilters] = useState({
     month: (new Date().getMonth() + 1).toString(),
@@ -27,6 +31,17 @@ export default function EmployeeInbox() {
       search: filters.search
     }
   )
+
+  const handleDelete = async (id: string, date: string) => {
+    if (!confirm(`Are you sure you want to delete your entry for ${formatDate(date)}?`)) return
+    
+    try {
+      await deleteBatta.mutateAsync(id)
+      toast.success("Entry deleted successfully")
+    } catch (error) {
+      toast.error("Failed to delete entry")
+    }
+  }
 
   const tabs: { label: string; value: BattaStatus | 'all' }[] = [
     { label: 'All', value: 'all' },
@@ -68,7 +83,29 @@ export default function EmployeeInbox() {
         return <span className="text-emerald-600 font-bold">₹{item.approved_amount}</span>
       }
       return <span className="text-slate-600 font-bold max-w-[100px]">₹{defaultAmount} (Standard)</span>
-    } }
+    } },
+    { header: t('actions.actions'), accessor: (item: any) => (
+      <div className="flex items-center gap-2">
+        {item.status === 'pending' && (
+          <>
+            <button 
+              onClick={() => navigate(`/submit-batta?id=${item.id}`)}
+              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+              title="Edit Entry"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button 
+              onClick={() => handleDelete(item.id, item.date)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+              title="Delete Entry"
+            >
+              <Trash2 size={16} />
+            </button>
+          </>
+        )}
+      </div>
+    ) }
   ]
 
   return (

@@ -4,6 +4,8 @@ export interface User {
   id: string
   emp_code: string
   name: string
+  name_ta?: string
+  name_hi?: string
   role: UserRole
   designation?: string
   grade?: string
@@ -39,6 +41,8 @@ export interface BattaEntry {
     site: string
     batta_amount: number
     designation?: string
+    name_ta?: string
+    name_hi?: string
   }
 }
 

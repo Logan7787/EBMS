@@ -189,6 +189,80 @@ export function useSubmitBatta() {
   })
 }
 
+export function useBattaEntry(id: string | null) {
+  return useQuery({
+    queryKey: ['batta-entry', id],
+    queryFn: async () => {
+      if (!id) return null
+      const { data, error } = await supabase
+        .from('batta_entries')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) throw error
+      return data as BattaEntry
+    },
+    enabled: !!id,
+  })
+}
+
+export function useUpdateBatta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string
+      date: string
+      particulars: string
+      managerId: string
+      dayNight: 'Day' | 'Night'
+      category?: 'Work' | 'Leave' | 'NoWork'
+      time?: string
+    }) => {
+      const { error } = await supabase
+        .from('batta_entries')
+        .update({
+          date: payload.date,
+          particulars: payload.particulars,
+          manager_id: payload.managerId,
+          day_night: payload.dayNight,
+          category: payload.category || 'Work',
+          time: payload.time || null,
+        })
+        .eq('id', payload.id)
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('duplicate_shift')
+        }
+        throw error
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['batta-entries'] })
+      qc.invalidateQueries({ queryKey: ['pending-batta'] })
+    },
+  })
+}
+
+export function useDeleteBatta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('batta_entries')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['batta-entries'] })
+      qc.invalidateQueries({ queryKey: ['pending-batta'] })
+    },
+  })
+}
+
 export function useUpdateBattaStatus() {
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)

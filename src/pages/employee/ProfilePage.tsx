@@ -10,8 +10,10 @@ export default function ProfilePage() {
   const user = useAuthStore(s => s.user)
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'ta' : 'en'
-    i18n.changeLanguage(newLang)
+    const langs = ['en', 'ta', 'hi']
+    const currentIndex = langs.indexOf(i18n.language)
+    const nextIndex = (currentIndex + 1) % langs.length
+    i18n.changeLanguage(langs[nextIndex])
   }
 
   const details = [
@@ -49,7 +51,7 @@ export default function ProfilePage() {
                   <span className="text-sm font-bold text-slate-700">Language</span>
                 </div>
                 <span className="text-xs font-black text-indigo-600 uppercase group-hover:scale-110 transition-transform">
-                  {i18n.language === 'en' ? 'English' : 'தமிழ்'}
+                  {i18n.language === 'en' ? 'English' : i18n.language === 'ta' ? 'தமிழ்' : 'हिंदी'}
                 </span>
               </button>
             </div>

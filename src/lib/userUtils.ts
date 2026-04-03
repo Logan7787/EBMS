@@ -3,5 +3,8 @@ export function getDisplayName(user: any, language: string) {
   if (language === 'ta' && user.name_ta) {
     return user.name_ta
   }
+  if (language === 'hi' && user.name_hi) {
+    return user.name_hi
+  }
   return user.name
 }

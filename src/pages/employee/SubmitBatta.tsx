@@ -2,25 +2,29 @@ import { useEffect, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { battaSubmitSchema, BattaSubmitFormValues } from '../../lib/schemas'
-import { useSubmitBatta } from '../../hooks/useBatta'
+import { useSubmitBatta, useBattaEntry, useUpdateBatta } from '../../hooks/useBatta'
 import { useManagers } from '../../hooks/useEmployees'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'sonner'
 import { PageHeader } from '../../components/shared/PageHeader'
-import { Send, Calendar, MessageSquare, UserCheck, Loader2, SunMoon, Clock, Mic, MicOff } from 'lucide-react'
+import { Send, Calendar, MessageSquare, UserCheck, Loader2, SunMoon, Clock, Mic, MicOff, Save } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { getDisplayName } from '../../lib/userUtils'
 
 export default function SubmitBatta() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('id')
   const user = useAuthStore(s => s.user)
   const { data: managers } = useManagers()
   const submitBatta = useSubmitBatta()
+  const updateBatta = useUpdateBatta()
+  const { data: existingEntry, isLoading: isLoadingEntry } = useBattaEntry(editId)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<BattaSubmitFormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue, reset } = useForm<BattaSubmitFormValues>({
     resolver: zodResolver(battaSubmitSchema),
     defaultValues: {
       managerId: user?.managerId || '',
@@ -30,6 +34,20 @@ export default function SubmitBatta() {
       time: ''
     }
   })
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (existingEntry) {
+      reset({
+        date: existingEntry.date,
+        particulars: existingEntry.particulars,
+        managerId: existingEntry.manager_id,
+        dayNight: existingEntry.day_night as 'Day' | 'Night',
+        category: (existingEntry.category || 'Work') as 'Work' | 'Leave' | 'NoWork',
+        time: existingEntry.time || ''
+      })
+    }
+  }, [existingEntry, reset])
 
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
@@ -109,11 +127,21 @@ export default function SubmitBatta() {
   const onSubmit = async (data: BattaSubmitFormValues) => {
     try {
       if (!user?.id) return
-      await submitBatta.mutateAsync({
-        ...data,
-        empId: user.id
-      })
-      toast.success(t('batta.submitted'))
+      
+      if (editId) {
+        await updateBatta.mutateAsync({
+          id: editId,
+          ...data
+        })
+        toast.success("Batta entry updated successfully")
+      } else {
+        await submitBatta.mutateAsync({
+          ...data,
+          empId: user.id
+        })
+        toast.success(t('batta.submitted'))
+      }
+      
       navigate('/inbox')
     } catch (error: any) {
       if (error.message === 'duplicate_shift') {
@@ -129,17 +157,23 @@ export default function SubmitBatta() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <PageHeader 
-        title={t('nav.submit')} 
-        subtitle="Record your fieldwork details for allowance processing."
+        title={editId ? "Edit Batta" : t('nav.submit')} 
+        subtitle={editId ? "Correct your fieldwork details." : "Record your fieldwork details for allowance processing."}
       />
 
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         <div className="bg-indigo-600 px-8 py-4 flex items-center gap-3">
-          <Send className="text-white/80" size={20} />
-          <h3 className="text-white font-bold">{t('batta.submit')}</h3>
+          {editId ? <Save className="text-white/80" size={20} /> : <Send className="text-white/80" size={20} />}
+          <h3 className="text-white font-bold">{editId ? "Update Entry" : t('batta.submit')}</h3>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
+        {isLoadingEntry ? (
+          <div className="p-16 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="animate-spin text-indigo-600" size={32} />
+            <p className="text-slate-500 font-medium">Loading entry details...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -298,10 +332,18 @@ export default function SubmitBatta() {
               disabled={isSubmitting}
               className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center gap-2 disabled:opacity-70"
             >
-              {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> {t('batta.submit')}</>}
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  {editId ? <Save size={18} /> : <Send size={18} />} 
+                  {editId ? "Update Entry" : t('batta.submit')}
+                </>
+              )}
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   )
