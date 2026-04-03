@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getDisplayName } from '../../lib/userUtils'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
 import { StatusBadge } from '../../components/shared/StatusBadge'
@@ -11,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 export default function EmployeeInbox() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const deleteBatta = useDeleteBatta()
   const [filter, setFilter] = useState<BattaStatus | 'all'>('all')
@@ -58,6 +59,14 @@ export default function EmployeeInbox() {
       </div>
     ) },
     { header: t('batta.particulars'), accessor: 'particulars' as const },
+    { 
+      header: t('batta.manager'), 
+      accessor: (item: any) => (
+        <span className="font-bold text-indigo-600">
+          {getDisplayName(item.manager, i18n.language) || 'N/A'}
+        </span>
+      )
+    },
     { header: "Status", accessor: (item: any) => (
       <div className="flex flex-col gap-1 items-start">
         <StatusBadge status={item.status} />

@@ -44,6 +44,11 @@ export interface BattaEntry {
     name_ta?: string
     name_hi?: string
   }
+  manager?: {
+    name: string
+    name_ta?: string
+    name_hi?: string
+  }
 }
 
 export interface BattaReportRow {

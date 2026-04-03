@@ -12,8 +12,9 @@ export function useMyBattaEntries(status?: BattaStatus, filters?: { month?: numb
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
-          approver:users!approved_by (name)
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation, name_ta, name_hi),
+          approver:users!approved_by (name, name_ta, name_hi),
+          manager:users!manager_id (name, name_ta, name_hi)
         `)
         .eq('emp_id', user?.id)
         .order('date', { ascending: false })
