@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useGlobalBattaReport } from '../../hooks/useBatta'
-import { Download, Search, Plus, Minus, Loader2 } from 'lucide-react'
+import { Download, Search, Plus, Minus, Loader2, X } from 'lucide-react'
 import { cn, getMonthOptions, getYearOptions, formatDate } from '../../lib/utils'
 
 export default function HRReports() {
@@ -15,7 +15,8 @@ export default function HRReports() {
   const [filters, setFilters] = useState({
     month: (new Date().getMonth() + 1).toString(),
     year: new Date().getFullYear().toString(),
-    period: '', // Empty means ALL
+    period: '',
+    date: '',
     site: '',
     search: ''
   })
@@ -26,7 +27,8 @@ export default function HRReports() {
     Number(filters.month), 
     Number(filters.year), 
     filters.period || undefined,
-    filters.site || undefined
+    filters.site || undefined,
+    filters.date || undefined
   )
 
   const toggleRow = (empId: string) => {
@@ -47,7 +49,14 @@ export default function HRReports() {
     (!filters.site || e.site === filters.site) &&
     (e.name.toLowerCase().includes(filters.search.toLowerCase()) || 
      e.emp_code.toLowerCase().includes(filters.search.toLowerCase()))
-  ) || []
+  )?.sort((a, b) => {
+    const catgA = a.catg_code || '999'
+    const catgB = b.catg_code || '999'
+    if (catgA !== catgB) {
+      return catgA.localeCompare(catgB, undefined, { numeric: true })
+    }
+    return a.name.localeCompare(b.name)
+  }) || []
 
 
 
@@ -59,6 +68,7 @@ export default function HRReports() {
     },
     { header: t('employee.code'), accessor: 'emp_code' as const },
     { header: t('employee.name'), accessor: 'name' as const },
+    { header: 'CATG', accessor: 'catg_code' as const, className: 'w-16 text-center font-bold text-indigo-600' },
     { header: t('employee.designation'), accessor: 'designation' as const },
     { header: t('employee.site'), accessor: 'site' as const },
     { header: t('employee.rate'), accessor: (item: any) => `₹${item.batta_amount}` }
@@ -67,10 +77,11 @@ export default function HRReports() {
   const exportCSV = () => {
     if (!reportData || reportData.length === 0) return
 
-    const headers = ['EmpCode', 'Name', 'Designation', 'Site', 'Day', 'Night', 'Total Amount']
+    const headers = ['EmpCode', 'Name', 'CATG', 'Designation', 'Site', 'Day', 'Night', 'Total Amount']
     const rows = filteredBatta.map(item => [
       item.emp_code,
       item.name,
+      item.catg_code,
       item.designation,
       item.site,
       item.dayCount,
@@ -208,6 +219,23 @@ export default function HRReports() {
                   <option value="2">Period 2 (16-31)</option>
                 </select>
               </div>
+
+              <div className="w-48 relative">
+                <input 
+                  type="date" 
+                  value={filters.date} 
+                  onChange={e => setFilters(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                {filters.date && (
+                  <button 
+                    onClick={() => setFilters(prev => ({ ...prev, date: '' }))}
+                    className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </>
           )}
 
@@ -252,6 +280,7 @@ export default function HRReports() {
                   <th className="py-3 px-4 font-bold border-r border-slate-200 w-12 text-center">S.No</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200">EmpCode</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200">Name</th>
+                  <th className="py-3 px-4 font-bold border-r border-slate-200 text-center">CATG</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200">Designation</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200">Site</th>
                   <th className="py-3 px-4 font-bold border-r border-slate-200 text-center">Day</th>
@@ -265,6 +294,7 @@ export default function HRReports() {
                     <td className="py-3 px-4 border-r border-slate-200 text-center font-medium text-slate-500">{index + 1}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-900 font-medium">{item.emp_code}</td>
                     <td className="py-3 px-4 border-r border-slate-200 font-semibold text-slate-800">{item.name}</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-center font-bold text-indigo-600 bg-indigo-50/30">{item.catg_code}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-600 italic">{item.designation}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-slate-600">{item.site}</td>
                     <td className="py-3 px-4 border-r border-slate-200 text-center text-slate-600">{+item.dayCount.toFixed(1)}</td>
@@ -275,7 +305,7 @@ export default function HRReports() {
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50/50 font-bold border-t-2 border-slate-200">
-                  <td colSpan={5} className="py-4 px-6 text-right text-slate-600 uppercase tracking-wider text-xs border-r border-slate-200">GRAND TOTAL</td>
+                  <td colSpan={6} className="py-4 px-6 text-right text-slate-600 uppercase tracking-wider text-xs border-r border-slate-200">GRAND TOTAL</td>
                   <td className="py-4 px-4 text-center border-r border-slate-200 text-indigo-600">
                     {+filteredBatta.reduce((sum, item) => sum + item.dayCount, 0).toFixed(1)}
                   </td>
@@ -297,6 +327,7 @@ export default function HRReports() {
                 <th className="py-4 px-6 w-10"></th>
                 <th className="py-4 px-6 font-semibold">EmpCode</th>
                 <th className="py-4 px-6 font-semibold">Name</th>
+                <th className="py-4 px-6 font-semibold text-center">CATG</th>
                 <th className="py-4 px-6 font-semibold">Designation</th>
                 <th className="py-4 px-6 font-semibold">Site</th>
                 <th className="py-4 px-6 font-semibold text-center">Day</th>
@@ -322,6 +353,9 @@ export default function HRReports() {
                     </td>
                     <td className="py-4 px-6 text-sm font-medium text-slate-900">{item.emp_code}</td>
                     <td className="py-4 px-6 text-sm font-semibold text-slate-700">{item.name}</td>
+                    <td className="py-4 px-6 text-sm text-center font-bold text-indigo-600">
+                      <span className="bg-indigo-50 px-2 py-1 rounded-md">{item.catg_code}</span>
+                    </td>
                     <td className="py-4 px-6 text-sm text-slate-500 italic">{item.designation}</td>
                     <td className="py-4 px-6 text-sm text-slate-600">{item.site}</td>
                     <td className="py-4 px-6 text-sm text-center text-slate-600 font-medium">
@@ -340,7 +374,7 @@ export default function HRReports() {
                   
                   {expandedRows.includes(item.emp_id) && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+                      <td colSpan={10} className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ml-10">
                           <div className="bg-slate-50 px-4 py-2 border-b flex justify-between items-center">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Attendance Timeline</span>

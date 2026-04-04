@@ -43,6 +43,7 @@ export interface BattaEntry {
     designation?: string
     name_ta?: string
     name_hi?: string
+    catg_code?: string
   }
   manager?: {
     name: string

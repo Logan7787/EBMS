@@ -15,6 +15,7 @@ export default function ManagerInbox() {
     month: (new Date().getMonth() + 1).toString(),
     year: new Date().getFullYear().toString(),
     period: '',
+    date: '',
     search: ''
   })
   const [selectedItem, setSelectedItem] = useState<{ id: string; action: 'approved' | 'rejected' | 'fined' } | null>(null)
@@ -27,12 +28,14 @@ export default function ManagerInbox() {
     month: Number(filters.month),
     year: Number(filters.year),
     period: filters.period || undefined,
+    date: filters.date || undefined,
     search: filters.search
   })
   const { data: recent, isLoading: recentLoading } = useRecentTeamDecisions({
     month: Number(filters.month),
     year: Number(filters.year),
     period: filters.period || undefined,
+    date: filters.date || undefined,
     search: filters.search
   })
   const { mutateAsync: updateStatus } = useUpdateBattaStatus()
@@ -196,7 +199,6 @@ export default function ManagerInbox() {
             {getYearOptions().map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
           </select>
         </div>
-
         <div className="w-40">
           <select 
             value={filters.period} 
@@ -207,6 +209,23 @@ export default function ManagerInbox() {
             <option value="1-15">1st - 15th</option>
             <option value="16-end">16th - End</option>
           </select>
+        </div>
+
+        <div className="w-48 relative">
+          <input 
+            type="date" 
+            value={filters.date} 
+            onChange={e => setFilters(prev => ({ ...prev, date: e.target.value }))}
+            className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          {filters.date && (
+            <button 
+              onClick={() => setFilters(prev => ({ ...prev, date: '' }))}
+              className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 

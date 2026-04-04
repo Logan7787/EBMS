@@ -54,7 +54,7 @@ export function useMyBattaEntries(status?: BattaStatus, filters?: { month?: numb
   })
 }
 
-export function usePendingTeamBatta(filters?: { month?: number; year?: number; period?: string; search?: string }) {
+export function usePendingTeamBatta(filters?: { month?: number; year?: number; period?: string; search?: string; date?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
     queryKey: ['pending-batta', user?.id, filters],
@@ -69,14 +69,16 @@ export function usePendingTeamBatta(filters?: { month?: number; year?: number; p
         .eq('status', 'pending')
         .order('date', { ascending: false })
 
-      if (filters?.month && filters?.year) {
+      if (filters?.date) {
+        query = query.eq('date', filters.date)
+      } else if (filters?.month && filters?.year) {
         // Calculate the date range based on filters
         const lastDay = new Date(filters.year, filters.month, 0).getDate()
         let startDay = 1
         let endDay = lastDay
 
-        if (filters.period === '1') endDay = 15
-        else if (filters.period === '2') startDay = 16
+        if (filters.period === '1' || filters.period === '1-15') endDay = 15
+        else if (filters.period === '2' || filters.period === '16-end') startDay = 16
 
         // Correct format for date string: YYYY-MM-DD
         const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
@@ -103,7 +105,7 @@ export function usePendingTeamBatta(filters?: { month?: number; year?: number; p
   })
 }
 
-export function useRecentTeamDecisions(filters?: { month?: number; year?: number; period?: string; search?: string }) {
+export function useRecentTeamDecisions(filters?: { month?: number; year?: number; period?: string; search?: string; date?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
     queryKey: ['recent-team-decisions', user?.id, filters],
@@ -118,14 +120,16 @@ export function useRecentTeamDecisions(filters?: { month?: number; year?: number
         .neq('status', 'pending')
         .order('date', { ascending: false })
 
-      if (filters?.month && filters?.year) {
+      if (filters?.date) {
+        query = query.eq('date', filters.date)
+      } else if (filters?.month && filters?.year) {
         // Calculate the date range based on filters
         const lastDay = new Date(filters.year, filters.month, 0).getDate()
         let startDay = 1
         let endDay = lastDay
 
-        if (filters.period === '1') endDay = 15
-        else if (filters.period === '2') startDay = 16
+        if (filters.period === '1' || filters.period === '1-15') endDay = 15
+        else if (filters.period === '2' || filters.period === '16-end') startDay = 16
 
         // Correct format for date string: YYYY-MM-DD
         const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
@@ -385,7 +389,7 @@ export function useTeamReport(month: number, year: number) {
   })
 }
 
-export function useGlobalBattaReport(month: number, year: number, period?: string, site?: string) {
+export function useGlobalBattaReport(month: number, year: number, period?: string, site?: string, date?: string) {
   const user = useAuthStore(s => s.user)
   return useQuery({
     queryKey: ['global-batta-report', month, year, period, site],
@@ -394,10 +398,14 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation, catg_code),
           approver:users!approved_by (name)
         `)
         .eq('status', 'approved')
+
+      if (date) {
+        query = query.eq('date', date)
+      }
 
       const { data, error } = await query
       if (error) throw error
@@ -423,6 +431,8 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
 
       // Filter entries for the selected month/period
       let filtered = data.filter(d => {
+        if (date) return d.date === date
+        
         const dDate = new Date(d.date)
         const isMonthMatch = (dDate.getMonth() + 1) === month && dDate.getFullYear() === year
         if (!isMonthMatch) return false
@@ -463,6 +473,7 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
             emp_code: current.employee?.emp_code || '-',
             designation: current.employee?.designation || '-',
             site: current.employee?.site || '-',
+            catg_code: current.employee?.catg_code || '999',
             dayCount: isWork ? (current.day_night === 'Day' ? dutyValue : 0) : 0,
             nightCount: isWork ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
             days: isWork ? 1 : 0,
@@ -500,7 +511,15 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         emp.missingCount = gaps.filter(g => g.status === 'missing').length
       })
 
-      return grouped
+      // Sort by catg_code then by name
+      return grouped.sort((a, b) => {
+        const catgA = a.catg_code || '999'
+        const catgB = b.catg_code || '999'
+        if (catgA !== catgB) {
+          return catgA.localeCompare(catgB, undefined, { numeric: true })
+        }
+        return a.name.localeCompare(b.name)
+      })
     },
     enabled: !!user?.id && user?.role === 'HR',
   })

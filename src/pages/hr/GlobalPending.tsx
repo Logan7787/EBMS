@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
@@ -30,6 +30,16 @@ export default function GlobalPending() {
     site: filters.site || undefined,
     search: filters.search || undefined
   })
+
+  // Sort data by employee name by default
+  const sortedPendingData = useMemo(() => {
+    if (!pendingData) return []
+    return [...pendingData].sort((a, b) => {
+      const nameA = getDisplayName(a.employee, i18n.language) || ''
+      const nameB = getDisplayName(b.employee, i18n.language) || ''
+      return nameA.localeCompare(nameB)
+    })
+  }, [pendingData, i18n.language])
 
   const sites = Array.from(new Set(employees?.map(e => e.site).filter(Boolean)))
 
@@ -198,7 +208,7 @@ export default function GlobalPending() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <DataTable 
               columns={columns} 
-              data={pendingData}
+              data={sortedPendingData}
             />
           </div>
         )}
