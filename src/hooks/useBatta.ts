@@ -574,3 +574,91 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
     enabled: !!user?.id && user?.role === 'HR',
   })
 }
+export function useMissingSubmissions(month: number, year: number, period?: string, site?: string, date?: string) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['missing-submissions', month, year, period, site, date],
+    queryFn: async () => {
+      // 1. Fetch all active employees with battaAmount > 0
+      let usersQuery = supabase
+        .from('users')
+        .select('id, name, emp_code, site, batta_amount, designation, catg_code')
+        .eq('active', true)
+        .gt('batta_amount', 0)
+
+      if (site) {
+        usersQuery = usersQuery.eq('site', site)
+      }
+
+      const { data: allUsers, error: usersError } = await usersQuery
+      if (usersError) throw usersError
+
+      // 2. Fetch all batta entries for the range
+      let entriesQuery = supabase
+        .from('batta_entries')
+        .select('emp_id, date')
+
+      const lastDay = new Date(year, month, 0).getDate()
+      let startDay = 1
+      let endDay = lastDay
+
+      if (period === '1') endDay = 15
+      else if (period === '2') startDay = 16
+
+      const startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+      const endDateString = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+      
+      entriesQuery = entriesQuery.gte('date', startDate).lte('date', endDateString)
+      
+      if (date) {
+        entriesQuery = entriesQuery.eq('date', date)
+      }
+
+      const { data: entries, error: entriesError } = await entriesQuery
+      if (entriesError) throw entriesError
+
+      // 3. Determine the dates to check
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const checkDates: string[] = []
+      
+      // If date is provided, only check that date. Otherwise check the whole period.
+      const searchDayStart = date ? new Date(date).getDate() : startDay
+      const searchDayEnd = date ? new Date(date).getDate() : Math.min(new Date().getDate(), endDay)
+
+      for (let d = searchDayStart; d <= searchDayEnd; d++) {
+        const dObj = new Date(year, month - 1, d)
+        // Skip Sundays
+        if (dObj.getDay() === 0) continue
+        // Skip future dates
+        if (dObj > today) continue
+        
+        checkDates.push(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+      }
+
+      // 4. Find gaps
+      const results = allUsers.map(u => {
+        const userEntries = entries.filter(e => e.emp_id === u.id)
+        const missingDates = checkDates.filter(d => !userEntries.some(e => e.date === d))
+        
+        return {
+          ...u,
+          missingDates,
+          missingCount: missingDates.length
+        }
+      }).filter(r => r.missingCount > 0)
+
+      // 5. Sort by catg_code and name
+      return results.sort((a, b) => {
+        const catgA = a.catg_code || '999'
+        const catgB = b.catg_code || '999'
+        if (catgA !== catgB) {
+          return catgA.localeCompare(catgB, undefined, { numeric: true })
+        }
+        return a.name.localeCompare(b.name)
+      })
+    },
+    enabled: !!user?.id && user?.role === 'HR',
+  })
+}

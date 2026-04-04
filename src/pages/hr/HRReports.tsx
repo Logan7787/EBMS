@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
 import { useEmployees } from '../../hooks/useEmployees'
-import { useGlobalBattaReport } from '../../hooks/useBatta'
+import { useGlobalBattaReport, useMissingSubmissions } from '../../hooks/useBatta'
 import { Download, Search, Plus, Minus, Loader2, X } from 'lucide-react'
 import { cn, getMonthOptions, getYearOptions, formatDate } from '../../lib/utils'
 
 export default function HRReports() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<'batta' | 'active' | 'paysheet'>('batta')
+  const [activeTab, setActiveTab] = useState<'batta' | 'active' | 'paysheet' | 'missing'>('batta')
   const { data: employees, isLoading: employeesLoading } = useEmployees()
   
   const [filters, setFilters] = useState({
@@ -26,6 +26,14 @@ export default function HRReports() {
   const { data: reportData, isLoading: reportLoading } = useGlobalBattaReport(
     Number(filters.month), 
     Number(filters.year), 
+    filters.period || undefined,
+    filters.site || undefined,
+    filters.date || undefined
+  )
+
+  const { data: missingData, isLoading: missingLoading } = useMissingSubmissions(
+    Number(filters.month),
+    Number(filters.year),
     filters.period || undefined,
     filters.site || undefined,
     filters.date || undefined
@@ -75,6 +83,41 @@ export default function HRReports() {
   ]
 
   const exportCSV = () => {
+    if (activeTab === 'missing') {
+      if (!missingData || missingData.length === 0) return
+      
+      const headers = ['EmpCode', 'Name', 'CATG', 'Designation', 'Site', 'Missing Dates', 'Count']
+      const rows = (missingData || [])
+        .filter(m => (m.name.toLowerCase().includes(filters.search.toLowerCase()) || m.emp_code.toLowerCase().includes(filters.search.toLowerCase())))
+        .map(item => [
+          item.emp_code,
+          item.name,
+          item.catg_code,
+          item.designation,
+          item.site,
+          item.missingDates.join(' | '),
+          item.missingCount
+        ])
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      const fileName = `Missing_Submissions_${filters.month}_${filters.year}.csv`
+      
+      link.setAttribute('href', url)
+      link.setAttribute('download', fileName)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
     if (!reportData || reportData.length === 0) return
 
     const headers = ['EmpCode', 'Name', 'CATG', 'Designation', 'Site', 'Day', 'Night', 'Total Amount']
@@ -84,8 +127,8 @@ export default function HRReports() {
       item.catg_code,
       item.designation,
       item.site,
-      item.dayCount,
-      item.nightCount,
+      item.dayCount.toFixed(1),
+      item.nightCount.toFixed(1),
       item.total
     ])
 
@@ -114,13 +157,13 @@ export default function HRReports() {
         subtitle="Generate and export system-wide reports."
         action={
           <div className="flex items-center gap-3 print:hidden">
-            {activeTab === 'paysheet' && (
+            {(activeTab === 'paysheet' || activeTab === 'missing') && (
               <button 
                 onClick={() => window.print()}
                 className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm"
               >
-                <Plus size={18} />
-                Print report
+                <Download size={18} />
+                Download PDF
               </button>
             )}
             <button 
@@ -128,7 +171,7 @@ export default function HRReports() {
               className="border border-slate-200 bg-white text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-slate-50 transition-all"
             >
               <Download size={18} />
-              {t('actions.download')}
+              {t('actions.download')} CSV
             </button>
           </div>
         }
@@ -166,6 +209,16 @@ export default function HRReports() {
             Active Employees
             {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />}
           </button>
+          <button
+            onClick={() => setActiveTab('missing')}
+            className={cn(
+              "pb-4 text-sm font-semibold transition-colors relative",
+              activeTab === 'missing' ? "text-red-600" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Missing Submissions
+            {activeTab === 'missing' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 rounded-full" />}
+          </button>
         </nav>
       </div>
 
@@ -182,7 +235,7 @@ export default function HRReports() {
             />
           </div>
           
-          {(activeTab === 'batta' || activeTab === 'paysheet') && (
+          {(activeTab === 'batta' || activeTab === 'paysheet' || activeTab === 'missing') && (
             <>
               <div className="w-36">
                 <select 
@@ -257,10 +310,71 @@ export default function HRReports() {
             data={filteredActive}
             loading={employeesLoading}
           />
-        ) : reportLoading ? (
+        ) : (reportLoading || missingLoading) ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="animate-spin text-indigo-600" size={40} />
             <p className="text-slate-400 text-sm font-medium">Generating Report...</p>
+          </div>
+        ) : activeTab === 'missing' ? (
+          <div className="overflow-x-auto print:overflow-visible">
+            <div className="hidden print:block mb-8 text-center">
+              <h1 className="text-2xl font-bold text-red-600 uppercase">Missing Submissions Report</h1>
+              <p className="text-slate-500 mt-1">
+                Month: {getMonthOptions().find(m => m.value === filters.month)?.label} {filters.year} | 
+                Period: {filters.period === '1' ? '1st to 15th' : filters.period === '2' ? '16th to 31st' : 'Full Month'} |
+                Site: {filters.site || 'All Sites'}
+                {filters.date && ` | Specific Date: ${formatDate(filters.date)}`}
+              </p>
+            </div>
+             <table className="w-full text-left border-collapse border border-slate-200">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200 font-bold">
+                  <th className="py-4 px-6 w-12 text-center border-r">S.No</th>
+                  <th className="py-4 px-6 border-r">Emp Code</th>
+                  <th className="py-4 px-6 border-r">Name</th>
+                  <th className="py-4 px-6 text-center border-r">CATG</th>
+                  <th className="py-4 px-6 border-r">Designation</th>
+                  <th className="py-4 px-6 border-r">Site</th>
+                  <th className="py-4 px-6 border-r">Missing Dates</th>
+                  <th className="py-4 px-6 text-center">Count</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(missingData || [])
+                  .filter(m => (m.name.toLowerCase().includes(filters.search.toLowerCase()) || m.emp_code.toLowerCase().includes(filters.search.toLowerCase())))
+                  .map((item, index) => (
+                  <tr key={item.id} className="hover:bg-red-50/30 transition-colors group">
+                    <td className="py-4 px-6 text-center font-bold text-slate-400">{index + 1}</td>
+                    <td className="py-4 px-6 text-sm font-medium text-slate-900">{item.emp_code}</td>
+                    <td className="py-4 px-6 text-sm font-bold text-slate-700">{item.name}</td>
+                    <td className="py-4 px-6 text-sm text-center font-black text-red-600">
+                      <span className="bg-red-50 px-2 py-1 rounded-md">{item.catg_code}</span>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-slate-500 italic">{item.designation}</td>
+                    <td className="py-4 px-6 text-sm text-slate-600">{item.site}</td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.missingDates.map(d => (
+                          <span key={d} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">
+                            {formatDate(d)}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                       <span className="bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-black">
+                        {item.missingCount}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {missingData?.length === 0 && (
+              <div className="text-center py-20 text-emerald-600 font-bold">
+                ✨ Excellent! No missing submissions found.
+              </div>
+            )}
           </div>
         ) : filteredBatta.length === 0 ? (
           <div className="text-center py-20 text-slate-500 font-medium">No records found for this period.</div>
