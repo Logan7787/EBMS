@@ -524,7 +524,7 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
     enabled: !!user?.id && user?.role === 'HR',
   })
 }
-export function useGlobalPendingBatta(filters: { month: number; year: number; period?: string; site?: string; search?: string }) {
+export function useGlobalPendingBatta(filters: { month: number; year: number; period?: string; site?: string; search?: string; managerId?: string }) {
   const user = useAuthStore(s => s.user)
   return useQuery({
     queryKey: ['global-pending-batta', filters],
@@ -534,7 +534,7 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
         .select(`
           *,
           employee:users!emp_id (name, emp_code, site, batta_amount, designation),
-          manager:users!manager_id (name, emp_code)
+          manager:users!manager_id (name, emp_code, id)
         `)
         .neq('status', 'approved')
         .order('date', { ascending: false })
@@ -564,12 +564,16 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
         const s = filters.search.toLowerCase()
         filtered = filtered.filter(d => 
           d.employee?.name.toLowerCase().includes(s) || 
-          d.employee?.emp_code.toLowerCase().includes(s) ||
-          d.manager?.name.toLowerCase().includes(s)
+          (d.employee?.emp_code || '').toLowerCase().includes(s) ||
+          (d.manager?.name || '').toLowerCase().includes(s)
         )
       }
 
-      return filtered as (BattaEntry & { manager: { name: string; emp_code: string } })[]
+      if (filters.managerId) {
+        filtered = filtered.filter(d => d.manager?.id === filters.managerId)
+      }
+
+      return filtered as (BattaEntry & { manager: { name: string; emp_code: string; id: string } })[]
     },
     enabled: !!user?.id && user?.role === 'HR',
   })

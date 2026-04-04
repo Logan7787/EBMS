@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { DataTable } from '../../components/shared/DataTable'
-import { useEmployees } from '../../hooks/useEmployees'
+import { useEmployees, useManagers } from '../../hooks/useEmployees'
 import { useGlobalPendingBatta } from '../../hooks/useBatta'
-import { Search, Loader2, Clock, AlertCircle, Copy, Check, UserCheck } from 'lucide-react'
+import { Search, Loader2, Clock, AlertCircle, Copy, Check, UserCheck, Download } from 'lucide-react'
 import { cn, getMonthOptions, getYearOptions, formatDate } from '../../lib/utils'
 import { toast } from 'sonner'
 import ReassignManagerDialog from '../../components/hr/ReassignManagerDialog'
@@ -18,8 +18,10 @@ export default function GlobalPending() {
     year: new Date().getFullYear().toString(),
     period: '',
     site: '',
-    search: ''
+    search: '',
+    managerId: ''
   })
+  const { data: managers } = useManagers()
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
   const [isReassignOpen, setIsReassignOpen] = useState(false)
 
@@ -28,7 +30,8 @@ export default function GlobalPending() {
     year: Number(filters.year),
     period: filters.period || undefined,
     site: filters.site || undefined,
-    search: filters.search || undefined
+    search: filters.search || undefined,
+    managerId: filters.managerId || undefined
   })
 
   // Sort data by employee name by default
@@ -52,6 +55,11 @@ export default function GlobalPending() {
   }
 
   const columns = [
+    { 
+      header: 'S.No', 
+      accessor: (_: any, index: number) => index + 1,
+      className: 'w-12 text-center font-bold text-slate-400'
+    },
     { 
       header: 'Employee', 
       accessor: (item: any) => (
@@ -140,6 +148,15 @@ export default function GlobalPending() {
       <PageHeader 
         title="Overall Pending Approvals" 
         subtitle="Track and follow up on pending/rejected requests across all managers."
+        action={
+          <button 
+            onClick={() => window.print()}
+            className="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm print:hidden"
+          >
+            <Download size={20} />
+            Download PDF
+          </button>
+        }
       />
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -189,6 +206,21 @@ export default function GlobalPending() {
               {sites.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+
+          <div className="w-64">
+            <select 
+              value={filters.managerId}
+              onChange={e => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
+              className="w-full px-4 py-2.5 border rounded-xl text-sm bg-slate-50 font-bold text-indigo-600"
+            >
+              <option value="">All Managers</option>
+              {managers?.map(m => (
+                <option key={m.id} value={m.id}>
+                  {getDisplayName(m as any, i18n.language)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {pendingLoading ? (
@@ -205,13 +237,59 @@ export default function GlobalPending() {
             <p className="text-slate-500 text-sm">No pending approvals found for the selected filters.</p>
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 print:hidden">
             <DataTable 
               columns={columns} 
               data={sortedPendingData}
             />
           </div>
         )}
+
+        {/* Print-only layout */}
+        <div className="hidden print:block">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Overall Pending Approvals Report</h1>
+            <p className="text-slate-500 mt-2 font-medium">
+              Month: {getMonthOptions().find(m => m.value === filters.month)?.label} {filters.year} | 
+              Site: {filters.site || 'All Sites'} |
+              Manager: {filters.managerId ? managers?.find(m => m.id === filters.managerId)?.name : 'All Managers'}
+            </p>
+          </div>
+          <table className="w-full text-left border-collapse border border-slate-200">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 text-[10px] uppercase font-black tracking-widest border-b border-slate-200">
+                <th className="py-3 px-4 border-r w-12 text-center">S.No</th>
+                <th className="py-3 px-4 border-r">Employee</th>
+                <th className="py-3 px-4 border-r">Site</th>
+                <th className="py-3 px-4 border-r">Date & Shift</th>
+                <th className="py-3 px-4 border-r">Status</th>
+                <th className="py-3 px-4 border-r">Assigned Manager</th>
+                <th className="py-3 px-4 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {sortedPendingData.map((item, index) => (
+                <tr key={index} className="text-[11px] border-b border-slate-100">
+                  <td className="py-2.5 px-4 border-r text-center font-bold text-slate-400">{index + 1}</td>
+                  <td className="py-2.5 px-4 border-r">
+                    <div className="font-bold text-slate-900">{getDisplayName(item.employee, i18n.language)}</div>
+                    <div className="text-[9px] font-medium text-slate-400">{item.employee?.emp_code}</div>
+                  </td>
+                  <td className="py-2.5 px-4 border-r font-medium text-slate-600">{item.employee?.site}</td>
+                  <td className="py-2.5 px-4 border-r">
+                    <div className="font-medium text-slate-700">{formatDate(item.date)}</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">{item.day_night}</div>
+                  </td>
+                  <td className="py-2.5 px-4 border-r uppercase font-black text-[9px] text-amber-600">{item.status}</td>
+                  <td className="py-2.5 px-4 border-r font-bold text-indigo-600">{getDisplayName(item.manager, i18n.language) || 'N/A'}</td>
+                  <td className="py-2.5 px-4 text-right font-black text-slate-900">
+                    ₹{(item.category === 'Work' || !item.category) ? (item.employee?.batta_amount || 0) : 0}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       {isReassignOpen && (
         <ReassignManagerDialog 
