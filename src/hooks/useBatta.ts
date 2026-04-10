@@ -394,6 +394,17 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
   return useQuery({
     queryKey: ['global-batta-report', month, year, period, site],
     queryFn: async () => {
+      // Calculate the full date range for the period
+      const lastDay = new Date(year, month, 0).getDate()
+      let startDay = 1
+      let endDay = lastDay
+
+      if (period === '1') endDay = 15
+      else if (period === '2') startDay = 16
+
+      const startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+
       let query = supabase
         .from('batta_entries')
         .select(`
@@ -402,6 +413,8 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
           approver:users!approved_by (name)
         `)
         .eq('status', 'approved')
+        .gte('date', startDate)
+        .lte('date', endDate)
 
       if (date) {
         query = query.eq('date', date)
@@ -409,14 +422,6 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
 
       const { data, error } = await query
       if (error) throw error
-
-      // Calculate the full date range for the period
-      const lastDay = new Date(year, month, 0).getDate()
-      let startDay = 1
-      let endDay = lastDay
-
-      if (period === '1') endDay = 15
-      else if (period === '2') startDay = 16
 
       const today = new Date()
       // We'll generate dates for the entire selected period
@@ -430,27 +435,22 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       }
 
       // Filter entries for the selected month/period
-      let filtered = data.filter(d => {
-        if (date) return d.date === date
-        
-        const dDate = new Date(d.date)
-        const isMonthMatch = (dDate.getMonth() + 1) === month && dDate.getFullYear() === year
-        if (!isMonthMatch) return false
-        
-        const day = dDate.getDate()
-        return day >= startDay && day <= endDay
-      })
+      let filtered = (data || []) as any[]
 
       if (site) {
-        filtered = filtered.filter(d => d.employee?.site === site)
+        filtered = filtered.filter(d => {
+          const emp = Array.isArray(d.employee) ? d.employee[0] : d.employee
+          return emp?.site === site
+        })
       }
 
       // Group by employee
       const grouped = filtered.reduce((acc: any[], current) => {
         const existing = acc.find(item => item.emp_id === current.emp_id)
         const isWork = current.category === 'Work' || !current.category
+        const emp = Array.isArray(current.employee) ? current.employee[0] : current.employee
         
-        const battaRate = Number(current.employee?.batta_amount || 0)
+        const battaRate = Number(emp?.batta_amount || 0)
         const approvedAmountValue = current.approved_amount !== undefined && current.approved_amount !== null 
           ? Number(current.approved_amount) 
           : battaRate
@@ -469,11 +469,11 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         } else {
           acc.push({
             emp_id: current.emp_id,
-            name: current.employee?.name || 'Unknown',
-            emp_code: current.employee?.emp_code || '-',
-            designation: current.employee?.designation || '-',
-            site: current.employee?.site || '-',
-            catg_code: current.employee?.catg_code || '999',
+            name: emp?.name || 'Unknown',
+            emp_code: emp?.emp_code || '-',
+            designation: emp?.designation || '-',
+            site: emp?.site || '-',
+            catg_code: emp?.catg_code || '999',
             dayCount: isWork ? (current.day_night === 'Day' ? dutyValue : 0) : 0,
             nightCount: isWork ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
             days: isWork ? 1 : 0,
@@ -529,6 +529,18 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
   return useQuery({
     queryKey: ['global-pending-batta', filters],
     queryFn: async () => {
+      const lastDay = new Date(filters.year, filters.month, 0).getDate()
+      let startDay = 1
+      let endDay = lastDay
+
+      if (filters.period) {
+        if (filters.period === '1') endDay = 15
+        if (filters.period === '2') startDay = 16
+      }
+
+      const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+      const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+
       let query = supabase
         .from('batta_entries')
         .select(`
@@ -537,40 +549,38 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
           manager:users!manager_id (name, emp_code, id)
         `)
         .neq('status', 'approved')
+        .gte('date', startDate)
+        .lte('date', endDate)
         .order('date', { ascending: false })
 
       const { data, error } = await query
       if (error) throw error
 
-      // Filter by month/year/period
-      let filtered = data.filter(d => {
-        const dDate = new Date(d.date)
-        const isMonthMatch = (dDate.getMonth() + 1) === filters.month && dDate.getFullYear() === filters.year
-        if (!isMonthMatch) return false
-        
-        if (filters.period) {
-          const day = dDate.getDate()
-          if (filters.period === '1') return day <= 15
-          if (filters.period === '2') return day >= 16
-        }
-        return true
-      })
+      let filtered = (data || []) as any[]
 
       if (filters.site) {
-        filtered = filtered.filter(d => d.employee?.site === filters.site)
+        filtered = filtered.filter(d => {
+          const emp = Array.isArray(d.employee) ? d.employee[0] : d.employee
+          return emp?.site === filters.site
+        })
       }
 
       if (filters.search) {
         const s = filters.search.toLowerCase()
-        filtered = filtered.filter(d => 
-          d.employee?.name.toLowerCase().includes(s) || 
-          (d.employee?.emp_code || '').toLowerCase().includes(s) ||
-          (d.manager?.name || '').toLowerCase().includes(s)
-        )
+        filtered = filtered.filter(d => {
+          const emp = Array.isArray(d.employee) ? d.employee[0] : d.employee
+          const mgr = Array.isArray(d.manager) ? d.manager[0] : d.manager
+          return emp?.name.toLowerCase().includes(s) || 
+                 (emp?.emp_code || '').toLowerCase().includes(s) ||
+                 (mgr?.name || '').toLowerCase().includes(s)
+        })
       }
 
       if (filters.managerId) {
-        filtered = filtered.filter(d => d.manager?.id === filters.managerId)
+        filtered = filtered.filter(d => {
+          const mgr = Array.isArray(d.manager) ? d.manager[0] : d.manager
+          return mgr?.id === filters.managerId
+        })
       }
 
       return filtered as (BattaEntry & { manager: { name: string; emp_code: string; id: string } })[]

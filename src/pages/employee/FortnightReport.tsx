@@ -32,10 +32,13 @@ export default function FortnightReport() {
     periodDates.push(`${year}-${m}-${d}`);
   }
 
-  // Map each date to an entry or a virtual gap
-  const timelineData = periodDates.map(dateStr => {
-    const existing = allEntries?.find(e => e.date === dateStr && e.status === 'approved');
-    if (existing) return { ...existing, type: 'real' };
+  // Map each date to entries or a virtual gap
+  const timelineData = periodDates.flatMap((dateStr): any[] => {
+    const dayEntries = allEntries?.filter(e => e.date === dateStr && e.status === 'approved') || [];
+    
+    if (dayEntries.length > 0) {
+      return dayEntries.map(e => ({ ...e, type: 'real' as const }));
+    }
 
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
@@ -57,12 +60,12 @@ export default function FortnightReport() {
       label = 'SUNDAY';
     }
 
-    return {
+    return [{
       date: dateStr,
-      type: 'gap',
+      type: 'gap' as const,
       status,
       label
-    };
+    }];
   });
 
   const reportRef = useRef<HTMLDivElement>(null)
@@ -144,32 +147,38 @@ export default function FortnightReport() {
     }}
   ]
 
-  const totalAmount = timelineData?.reduce((sum, item: any) => {
-    if (item.type === 'gap') return sum;
+  const approvedEntries = allEntries?.filter(e => {
+    const dDate = new Date(e.date)
+    return (dDate.getMonth() + 1) === Number(month) && 
+           dDate.getFullYear() === Number(year) &&
+           e.status === 'approved' &&
+           (period === '1-15' ? dDate.getDate() <= 15 : dDate.getDate() >= 16)
+  }) || [];
+
+  const totalAmount = approvedEntries.reduce((sum, item: any) => {
     const isWork = item.category === 'Work' || !item.category;
     if (!isWork) return sum;
-
     const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
     const defaultAmount = emp?.batta_amount || user?.battaAmount || 0;
     const finalAmount = (item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount;
     return sum + Number(finalAmount);
-  }, 0) || 0;
+  }, 0);
 
-  const totalDay = timelineData?.reduce((sum, item: any) => {
-    if (item.type !== 'real' || (item.category !== 'Work' && item.category) || item.day_night !== 'Day') return sum;
+  const totalDay = approvedEntries.reduce((sum, item: any) => {
+    if ((item.category !== 'Work' && item.category) || item.day_night !== 'Day') return sum;
     const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
     const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
     const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
     return sum + (defaultAmount > 0 ? (finalAmount / defaultAmount) : 1);
-  }, 0) || 0;
+  }, 0);
 
-  const totalNight = timelineData?.reduce((sum, item: any) => {
-    if (item.type !== 'real' || (item.category !== 'Work' && item.category) || item.day_night !== 'Night') return sum;
+  const totalNight = approvedEntries.reduce((sum, item: any) => {
+    if ((item.category !== 'Work' && item.category) || item.day_night !== 'Night') return sum;
     const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
     const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
     const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
     return sum + (defaultAmount > 0 ? (finalAmount / defaultAmount) : 1);
-  }, 0) || 0;
+  }, 0);
 
   return (
     <div className="space-y-6">
