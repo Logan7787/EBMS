@@ -5,6 +5,7 @@ import { DataTable } from '../../components/shared/DataTable'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useGlobalBattaReport, useMissingSubmissions } from '../../hooks/useBatta'
 import { Download, Search, Plus, Minus, Loader2, X } from 'lucide-react'
+import { useAuthStore } from '../../stores/authStore'
 import { cn, getMonthOptions, getYearOptions, formatDate } from '../../lib/utils'
 
 export default function HRReports() {
@@ -20,6 +21,16 @@ export default function HRReports() {
     site: '',
     search: ''
   })
+
+  // Force site filter for accounts role
+  const user = useAuthStore(s => s.user)
+  const isAccounts = user?.role === 'accounts'
+
+  React.useEffect(() => {
+    if (isAccounts && user?.site) {
+      setFilters(prev => ({ ...prev, site: user.site }))
+    }
+  }, [isAccounts, user?.site])
 
   const [expandedRows, setExpandedRows] = useState<string[]>([])
 
@@ -296,7 +307,11 @@ export default function HRReports() {
             <select 
               value={filters.site}
               onChange={e => setFilters(prev => ({ ...prev, site: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium"
+              disabled={isAccounts}
+              className={cn(
+                "w-full px-4 py-2 border rounded-xl text-sm bg-slate-50 font-medium",
+                isAccounts && "opacity-60 cursor-not-allowed"
+              )}
             >
               <option value="">All Sites</option>
               {sites.map(s => <option key={s} value={s}>{s}</option>)}

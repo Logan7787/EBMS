@@ -35,7 +35,7 @@ export function Sidebar() {
       label: t('nav.dashboard'), 
       path: user?.role === 'HR' ? '/hr' : user?.role === 'Manager' ? '/manager' : '/employee', 
       icon: LayoutDashboard,
-      roles: ['HR', 'Manager', 'Employee']
+      roles: ['HR', 'Manager', 'Employee', 'accounts']
     },
     { 
       label: t('nav.submit'), 
@@ -77,7 +77,7 @@ export function Sidebar() {
       label: "Global Reports", 
       path: '/hr/reports', 
       icon: BarChart3, 
-      roles: ['HR']
+      roles: ['HR', 'accounts']
     },
     { 
       label: "Global Pending", 
@@ -89,7 +89,7 @@ export function Sidebar() {
       label: t('nav.profile'), 
       path: '/profile', 
       icon: UserCircle, 
-      roles: ['HR', 'Manager', 'Employee']
+      roles: ['HR', 'Manager', 'Employee', 'accounts']
     },
   ]
 

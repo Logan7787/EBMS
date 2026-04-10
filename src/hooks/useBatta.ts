@@ -521,7 +521,7 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         return a.name.localeCompare(b.name)
       })
     },
-    enabled: !!user?.id && user?.role === 'HR',
+    enabled: !!user?.id && (user?.role === 'HR' || user?.role === 'accounts'),
   })
 }
 export function useGlobalPendingBatta(filters: { month: number; year: number; period?: string; site?: string; search?: string; managerId?: string }) {
@@ -663,6 +663,6 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
         return a.name.localeCompare(b.name)
       })
     },
-    enabled: !!user?.id && user?.role === 'HR',
+    enabled: !!user?.id && (user?.role === 'HR' || user?.role === 'accounts'),
   })
 }

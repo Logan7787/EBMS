@@ -148,6 +148,7 @@ export default function EmployeeForm({ employee, onClose }: EmployeeFormProps) {
                 <option value="Employee">Employee</option>
                 <option value="Manager">Manager</option>
                 <option value="HR">HR</option>
+                <option value="accounts">accounts</option>
               </select>
             </div>
 

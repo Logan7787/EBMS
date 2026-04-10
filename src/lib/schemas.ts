@@ -41,7 +41,7 @@ export const employeeSchema = z.object({
   site: z.string().min(1, 'Site required'),
   battaAmount: z.number().min(0),
   managerId: z.string().optional().or(z.literal('')),
-  role: z.enum(['HR', 'Manager', 'Employee']),
+  role: z.enum(['HR', 'Manager', 'Employee', 'accounts']),
   active: z.boolean(),
 })
 
