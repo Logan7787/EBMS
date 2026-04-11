@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 interface BulkEmployeeUploadProps {
   onClose: () => void
   onComplete: () => void
+  mode?: 'upload' | 'site-update'
 }
 
 interface UploadRow {
@@ -32,47 +33,55 @@ interface UploadStatus {
   message?: string
 }
 
-export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployeeUploadProps) {
+export default function BulkEmployeeUpload({ onClose, onComplete, mode = 'upload' }: BulkEmployeeUploadProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<UploadStatus[]>([])
   const [progress, setProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const downloadTemplate = () => {
-    const headers = [
-      'Employee Code',
-      'Name',
-      'Email',
-      'Password',
-      'Designation',
-      'Site',
-      'Batta Rate',
-      'Role',
-      'Reporting Manager Code',
-      'Grade',
-      'Category Code',
-      'Grade Code'
-    ]
-    const example = [
-      '1001',
-      'John Doe',
-      'john.doe@example.com',
-      'Welcome@123',
-      'Supervisor',
-      'BO',
-      '500',
-      'Employee',
-      '1000',
-      'G1',
-      'CAT-A',
-      'GC-01'
-    ]
+    let headers: string[] = []
+    let example: string[] = []
+
+    if (mode === 'site-update') {
+      headers = ['Employee Code', 'Site']
+      example = ['1001', 'NEW SITE']
+    } else {
+      headers = [
+        'Employee Code',
+        'Name',
+        'Email',
+        'Password',
+        'Designation',
+        'Site',
+        'Batta Rate',
+        'Role',
+        'Reporting Manager Code',
+        'Grade',
+        'Category Code',
+        'Grade Code'
+      ]
+      example = [
+        '1001',
+        'John Doe',
+        'john.doe@example.com',
+        'Welcome@123',
+        'Supervisor',
+        'BO',
+        '500',
+        'Employee',
+        '1000',
+        'G1',
+        'CAT-A',
+        'GC-01'
+      ]
+    }
     const csvContent = Papa.unparse([headers, example])
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', 'employee_template.csv')
+    link.setAttribute('download', mode === 'site-update' ? 'employee_site_update_template.csv' : 'employee_template.csv')
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -88,6 +97,25 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
       skipEmptyLines: true,
       complete: async (results) => {
         const data = results.data as any[]
+        
+        if (mode === 'site-update') {
+          const formattedData = data.map((row: any) => ({
+            empCode: row['Employee Code'] || '',
+            site: row['Site'] || '',
+          }))
+
+          const initialStatus: UploadStatus[] = formattedData.map((d, i) => ({
+            row: i + 1,
+            empCode: d.empCode,
+            name: `Updating Site: ${d.site}`,
+            status: 'pending'
+          }))
+
+          setResults(initialStatus)
+          await processSiteUpdates(formattedData)
+          return
+        }
+
         const formattedData: UploadRow[] = data.map((row: any) => ({
           empCode: row['Employee Code'] || '',
           name: row['Name'] || '',
@@ -115,6 +143,59 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
         await processUploads(formattedData)
       }
     })
+  }
+
+  const processSiteUpdates = async (data: { empCode: string, site: string }[]) => {
+    setIsProcessing(true)
+    let completed = 0
+
+    for (let i = 0; i < data.length; i++) {
+      const rowData = data[i]
+      setResults(prev => prev.map((res, idx) => 
+          idx === i ? { ...res, status: 'processing' } : res
+      ))
+
+      try {
+        if (!rowData.empCode) throw new Error('Employee Code is missing')
+
+        const { data: existingUser, error: fetchError } = await supabase
+          .from('users')
+          .select('id, name')
+          .eq('emp_code', rowData.empCode)
+          .maybeSingle()
+
+        if (fetchError) throw fetchError
+        if (!existingUser) throw new Error(`Employee code ${rowData.empCode} not found`)
+
+        // Update existing user with specific name retrieved for UI
+        setResults(prev => prev.map((res, idx) => 
+            idx === i ? { ...res, name: existingUser.name } : res
+        ))
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ site: rowData.site })
+          .eq('id', existingUser.id)
+        
+        if (updateError) throw updateError
+
+        setResults(prev => prev.map((res, idx) => 
+            idx === i ? { ...res, status: 'success' } : res
+        ))
+      } catch (error: any) {
+        console.error(`Error processing row ${i + 1}:`, error)
+        setResults(prev => prev.map((res, idx) => 
+            idx === i ? { ...res, status: 'error', message: error.message || 'Unknown error' } : res
+        ))
+      }
+
+      completed++
+      setProgress(Math.round((completed / data.length) * 100))
+    }
+
+    setIsProcessing(false)
+    onComplete()
+    toast.success('Bulk site update completed')
   }
 
   const processUploads = async (data: UploadRow[]) => {
@@ -217,8 +298,14 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8">
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Bulk Employee Upload</h2>
-            <p className="text-sm text-slate-500">Upload multiple employees via CSV template</p>
+            <h2 className="text-xl font-bold text-slate-900">
+              {mode === 'site-update' ? 'Bulk Site Update' : 'Bulk Employee Upload'}
+            </h2>
+            <p className="text-sm text-slate-500">
+              {mode === 'site-update' 
+                ? 'Update employee sites using CSV template' 
+                : 'Upload multiple employees via CSV template'}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
             <X size={20} />
@@ -233,11 +320,15 @@ export default function BulkEmployeeUpload({ onClose, onComplete }: BulkEmployee
                 <div className="text-sm text-indigo-900">
                   <p className="font-semibold mb-1">Before you start:</p>
                   <ul className="list-disc list-inside space-y-1 text-indigo-800/80">
-                    <li>Download the template and fill in the employee details.</li>
-                    <li><strong>Employee Code</strong> must be unique.</li>
-                    <li><strong>Email</strong> must be unique and valid.</li>
-                    <li><strong>Password</strong> must be at least 6 characters.</li>
-                    <li><strong>Reporting Manager Code</strong> should match an existing Manager/HR code.</li>
+                    <li>Download the template and fill in the details.</li>
+                    <li><strong>Employee Code</strong> must exist in the system.</li>
+                    {mode === 'upload' && (
+                      <>
+                        <li><strong>Email</strong> must be unique and valid.</li>
+                        <li><strong>Password</strong> must be at least 6 characters.</li>
+                        <li><strong>Reporting Manager Code</strong> should match an existing Manager/HR code.</li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </div>

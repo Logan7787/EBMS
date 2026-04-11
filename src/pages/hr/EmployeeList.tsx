@@ -15,6 +15,7 @@ export default function EmployeeList() {
   const toggleActive = useToggleEmployeeActive()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isBulkOpen, setIsBulkOpen] = useState(false)
+  const [isSiteUpdateOpen, setIsSiteUpdateOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [site, setSite] = useState('')
@@ -87,6 +88,13 @@ export default function EmployeeList() {
         action={
           <div className="flex gap-3">
             <button 
+              onClick={() => setIsSiteUpdateOpen(true)}
+              className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-slate-50 transition-all font-bold"
+            >
+              <Upload size={18} className="text-indigo-600" />
+              Bulk Site Update
+            </button>
+            <button 
               onClick={() => setIsBulkOpen(true)}
               className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-slate-50 transition-all"
             >
@@ -145,7 +153,16 @@ export default function EmployeeList() {
           onClose={() => setIsBulkOpen(false)}
           onComplete={() => {
             setIsBulkOpen(false)
-            // No need to manually refresh, react-query handles it
+          }}
+        />
+      )}
+
+      {isSiteUpdateOpen && (
+        <BulkEmployeeUpload 
+          mode="site-update"
+          onClose={() => setIsSiteUpdateOpen(false)}
+          onComplete={() => {
+            setIsSiteUpdateOpen(false)
           }}
         />
       )}
