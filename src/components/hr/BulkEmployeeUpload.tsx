@@ -224,7 +224,7 @@ export default function BulkEmployeeUpload({ onClose, onComplete, mode = 'upload
                 .eq('emp_code', rowData.empCode)
                 .single()
 
-            const managerId = rowData.managerEmpCode ? managerMap.get(rowData.managerEmpCode) : null
+            const managerId = rowData.managerEmpCode ? (managerMap.get(rowData.managerEmpCode) || null) : null
 
             const userData = {
                 emp_code: rowData.empCode,
@@ -235,9 +235,9 @@ export default function BulkEmployeeUpload({ onClose, onComplete, mode = 'upload
                 batta_amount: rowData.battaAmount,
                 manager_id: managerId,
                 active: true,
-                grade: rowData.grade,
-                catg_code: rowData.catgCode,
-                grade_code: rowData.gradeCode
+                grade: rowData.grade || null,
+                catg_code: rowData.catgCode || null,
+                grade_code: rowData.gradeCode || null
             }
 
             if (existingUser) {
