@@ -405,16 +405,21 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       const startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
       const endDate = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
 
+      const selectStr = site 
+        ? `*,employee:users!emp_id!inner(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
+        : `*,employee:users!emp_id(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
+
       let query = supabase
         .from('batta_entries')
-        .select(`
-          *,
-          employee:users!emp_id (name, emp_code, site, batta_amount, designation, catg_code),
-          approver:users!approved_by (name)
-        `)
+        .select(selectStr)
         .eq('status', 'approved')
         .gte('date', startDate)
         .lte('date', endDate)
+        .limit(5000)
+
+      if (site) {
+        query = query.eq('employee.site', site)
+      }
 
       if (date) {
         query = query.eq('date', date)
@@ -436,13 +441,6 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
 
       // Filter entries for the selected month/period
       let filtered = (data || []) as any[]
-
-      if (site) {
-        filtered = filtered.filter(d => {
-          const emp = Array.isArray(d.employee) ? d.employee[0] : d.employee
-          return emp?.site === site
-        })
-      }
 
       // Group by employee
       const grouped = filtered.reduce((acc: any[], current) => {
@@ -607,10 +605,14 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
       const { data: allUsers, error: usersError } = await usersQuery
       if (usersError) throw usersError
 
-      // 2. Fetch all batta entries for the range
+      // 2. Fetch all relevant batta entries for the range
+      const entriesSelectStr = site 
+        ? 'emp_id,date,status,employee:users!emp_id!inner(site)'
+        : 'emp_id,date,status'
+
       let entriesQuery = supabase
         .from('batta_entries')
-        .select('emp_id, date')
+        .select(entriesSelectStr)
 
       const lastDay = new Date(year, month, 0).getDate()
       let startDay = 1
@@ -622,14 +624,22 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
       const startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
       const endDateString = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
       
-      entriesQuery = entriesQuery.gte('date', startDate).lte('date', endDateString)
+      entriesQuery = entriesQuery
+        .gte('date', startDate)
+        .lte('date', endDateString)
+        .limit(5000)
       
+      if (site) {
+        entriesQuery = entriesQuery.eq('employee.site', site)
+      }
+
       if (date) {
         entriesQuery = entriesQuery.eq('date', date)
       }
 
-      const { data: entries, error: entriesError } = await entriesQuery
+      const { data, error: entriesError } = await entriesQuery
       if (entriesError) throw entriesError
+      const entries = (data as any[]) || []
 
       // 3. Determine the dates to check
       const today = new Date()
