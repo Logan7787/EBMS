@@ -33,7 +33,10 @@ export function Sidebar() {
   const navItems = [
     { 
       label: t('nav.dashboard'), 
-      path: user?.role === 'HR' ? '/hr' : user?.role === 'Manager' ? '/manager' : '/employee', 
+      path: (user?.role === 'HR') ? '/hr' 
+            : (user?.role === 'accounts' || user?.role === 'supercheck') ? '/hr/reports'
+            : (user?.role === 'Manager') ? '/manager' 
+            : '/employee', 
       icon: LayoutDashboard,
       roles: ['HR', 'Manager', 'Employee', 'accounts', 'supercheck']
     },
