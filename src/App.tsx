@@ -35,7 +35,7 @@ function PrivateRoute({ children, roles }: { children: React.ReactNode; roles: s
   if (!user) return <Navigate to="/login" replace />
   if (!roles.includes(user.role)) {
     const redirect = user.role === 'HR' ? '/hr' 
-                   : user.role === 'accounts' ? '/hr/reports'
+                   : (user.role === 'accounts' || user.role === 'supercheck') ? '/hr/reports'
                    : user.role === 'Manager' ? '/manager' 
                    : '/employee'
     return <Navigate to={redirect} replace />
@@ -133,7 +133,7 @@ function App() {
         {/* HR ROUTES */}
         <Route path="/hr" element={<PrivateRoute roles={['HR']}><HRDashboard /></PrivateRoute>} />
         <Route path="/hr/employees" element={<PrivateRoute roles={['HR']}><EmployeeList /></PrivateRoute>} />
-        <Route path="/hr/reports" element={<PrivateRoute roles={['HR', 'accounts']}><HRReports /></PrivateRoute>} />
+        <Route path="/hr/reports" element={<PrivateRoute roles={['HR', 'accounts', 'supercheck']}><HRReports /></PrivateRoute>} />
         <Route path="/hr/pending" element={<PrivateRoute roles={['HR']}><GlobalPending /></PrivateRoute>} />
         
         {/* MANAGER ROUTES */}
@@ -155,7 +155,7 @@ function App() {
         <Route path="/employee/report" element={<PrivateRoute roles={['Employee', 'Manager', 'HR']}><FortnightReport /></PrivateRoute>} />
         
         {/* COMMON ROUTES */}
-        <Route path="/profile" element={<PrivateRoute roles={['HR', 'Manager', 'Employee']}><ProfilePage /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute roles={['HR', 'Manager', 'Employee', 'accounts', 'supercheck']}><ProfilePage /></PrivateRoute>} />
         
         {/* REDIRECTS */}
         <Route path="/" element={<Navigate to="/login" replace />} />

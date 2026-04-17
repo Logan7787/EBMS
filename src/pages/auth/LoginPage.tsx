@@ -23,7 +23,7 @@ export default function LoginPage() {
       toast.success('Login successful')
       
       const redirect = role === 'HR' ? '/hr' 
-                     : role === 'accounts' ? '/hr/reports'
+                     : (role === 'accounts' || role === 'supercheck') ? '/hr/reports'
                      : role === 'Manager' ? '/manager' 
                      : '/employee'
       
