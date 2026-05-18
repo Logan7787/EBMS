@@ -15,7 +15,7 @@ export default function FortnightReport() {
   const [year, setYear] = useState(new Date().getFullYear().toString())
   const [period, setPeriod] = useState<'1-15' | '16-end'>('1-15')
   
-  const { data: allEntries, isLoading } = useMyBattaEntries('approved')
+  const { data: allEntries, isLoading } = useMyBattaEntries()
 
   // Calculate full date range for the period
   const lastDay = new Date(Number(year), Number(month), 0).getDate();
@@ -34,7 +34,7 @@ export default function FortnightReport() {
 
   // Map each date to entries or a virtual gap
   const timelineData = periodDates.flatMap((dateStr): any[] => {
-    const dayEntries = allEntries?.filter(e => e.date === dateStr && e.status === 'approved') || [];
+    const dayEntries = allEntries?.filter(e => e.date === dateStr && (e.status === 'approved' || e.status === 'rejected')) || [];
     
     if (dayEntries.length > 0) {
       return dayEntries.map(e => ({ ...e, type: 'real' as const }));
@@ -101,8 +101,8 @@ export default function FortnightReport() {
       if (isWork) {
         const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
         const defaultAmount = Number(emp?.batta_amount || user?.battaAmount || 0);
-        const finalAmount = Number((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
-        dutyValue = defaultAmount > 0 ? (finalAmount / defaultAmount) : 1;
+        const finalAmount = Number(item.status === 'rejected' ? 0 : ((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount));
+        dutyValue = defaultAmount > 0 && item.status !== 'rejected' ? (finalAmount / defaultAmount) : 1;
       }
 
       return (
@@ -114,7 +114,12 @@ export default function FortnightReport() {
             {isWork ? (
               <span className="flex items-center gap-1">
                 {item.day_night}
-                {dutyValue !== 1 && (
+                {item.status === 'rejected' && (
+                  <span className="text-[9px] bg-red-50 px-1.5 py-0.5 rounded text-red-600 font-black uppercase">
+                    Rejected
+                  </span>
+                )}
+                {item.status !== 'rejected' && dutyValue !== 1 && (
                   <span className="text-[10px] bg-slate-100 px-1 rounded text-indigo-600 font-bold">
                     {dutyValue}
                   </span>
@@ -137,7 +142,7 @@ export default function FortnightReport() {
       
       const emp = Array.isArray(item.employee) ? item.employee[0] : item.employee;
       const defaultAmount = emp?.batta_amount || user?.battaAmount || 0;
-      const finalAmount = (item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount;
+      const finalAmount = item.status === 'rejected' ? 0 : ((item.approved_amount !== undefined && item.approved_amount !== null) ? item.approved_amount : defaultAmount);
       return `₹${finalAmount}`;
     }},
     { header: 'Approved By', accessor: (item: any) => {
