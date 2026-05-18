@@ -412,7 +412,7 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       let query = supabase
         .from('batta_entries')
         .select(selectStr)
-        .eq('status', 'approved')
+        .in('status', ['approved', 'rejected'])
         .gte('date', startDate)
         .lte('date', endDate)
         .limit(5000)
@@ -449,18 +449,29 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         const emp = Array.isArray(current.employee) ? current.employee[0] : current.employee
         
         const battaRate = Number(emp?.batta_amount || 0)
-        const approvedAmountValue = current.approved_amount !== undefined && current.approved_amount !== null 
+        let approvedAmountValue = current.approved_amount !== undefined && current.approved_amount !== null 
           ? Number(current.approved_amount) 
           : battaRate
-        const dutyValue = battaRate > 0 ? (approvedAmountValue / battaRate) : 1
+          
+        if (current.status === 'rejected') {
+          approvedAmountValue = 0
+        }
 
-        const amount = isWork ? approvedAmountValue : 0
+        let dutyValue = battaRate > 0 ? (approvedAmountValue / battaRate) : 1
+        let amount = isWork ? approvedAmountValue : 0
+
+        if (current.status === 'rejected') {
+          dutyValue = 0
+          amount = 0
+        }
 
         if (existing) {
           if (isWork) {
             if (current.day_night === 'Day') existing.dayCount += dutyValue
             else existing.nightCount += dutyValue
-            existing.days += 1
+            if (current.status !== 'rejected') {
+              existing.days += 1
+            }
           }
           existing.total += Number(amount)
           existing.entries.push(current)
@@ -472,9 +483,9 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
             designation: emp?.designation || '-',
             site: emp?.site || '-',
             catg_code: emp?.catg_code || '999',
-            dayCount: isWork ? (current.day_night === 'Day' ? dutyValue : 0) : 0,
-            nightCount: isWork ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
-            days: isWork ? 1 : 0,
+            dayCount: isWork && current.status !== 'rejected' ? (current.day_night === 'Day' ? dutyValue : 0) : 0,
+            nightCount: isWork && current.status !== 'rejected' ? (current.day_night === 'Night' ? dutyValue : 0) : 0,
+            days: isWork && current.status !== 'rejected' ? 1 : 0,
             total: Number(amount),
             entries: [current]
           })
