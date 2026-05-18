@@ -288,7 +288,7 @@ export default function ManagerInbox() {
                             </td>
                             <td className="px-5 py-4 text-right">
                               <span className="text-lg font-black text-indigo-600">
-                                ₹{(entry.category === 'Work' || !entry.category) ? (emp?.batta_amount || 0) : 0}
+                                ₹{(entry.category === 'Work' || !entry.category) ? (entry.status === 'rejected' ? 0 : (entry.approved_amount !== undefined && entry.approved_amount !== null ? entry.approved_amount : (emp?.batta_amount || 0))) : 0}
                               </span>
                             </td>
                             <td className="px-5 py-4">
@@ -313,7 +313,7 @@ export default function ManagerInbox() {
               <div className="md:hidden space-y-4">
                 {pending?.map((entry: any) => {
                   const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
-                  const stdAmount = (entry.category === 'Work' || !entry.category) ? (emp?.batta_amount || 0) : 0;
+                  const stdAmount = (entry.category === 'Work' || !entry.category) ? (entry.status === 'rejected' ? 0 : (entry.approved_amount !== undefined && entry.approved_amount !== null ? entry.approved_amount : (emp?.batta_amount || 0))) : 0;
                   return (
                     <div key={entry.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
                       <div className="p-5 flex flex-col gap-3">
@@ -438,7 +438,7 @@ export default function ManagerInbox() {
                               </span>
                             </td>
                             <td className="px-5 py-4 text-right font-black">
-                              ₹{(entry.category === 'Work' || !entry.category) ? (entry.approved_amount ?? emp?.batta_amount) : 0}
+                              ₹{(entry.category === 'Work' || !entry.category) ? (entry.status === 'rejected' ? 0 : (entry.approved_amount !== undefined && entry.approved_amount !== null ? entry.approved_amount : (emp?.batta_amount || 0))) : 0}
                             </td>
                             <td className="px-5 py-4">
                               <div className="flex justify-center items-center gap-2">
@@ -475,7 +475,7 @@ export default function ManagerInbox() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <span className="text-[9px] font-black uppercase text-slate-400 block leading-none mb-1">Final</span>
-                          <span className="text-sm font-black text-slate-900 block leading-none">₹{(entry.category === 'Work' || !entry.category) ? (entry.approved_amount ?? emp?.batta_amount) : 0}</span>
+                          <span className="text-sm font-black text-slate-900 block leading-none">₹{(entry.category === 'Work' || !entry.category) ? (entry.status === 'rejected' ? 0 : (entry.approved_amount !== undefined && entry.approved_amount !== null ? entry.approved_amount : (emp?.batta_amount || 0))) : 0}</span>
                         </div>
                         <div className="flex items-center gap-1">
                            <button onClick={() => handleReset(entry.id)} className="p-2 text-slate-400 hover:bg-indigo-50 rounded-xl transition-all"><RotateCcw size={18} /></button>

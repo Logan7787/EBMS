@@ -111,9 +111,10 @@ export default function GlobalPending() {
       header: 'Amount', 
       accessor: (item: any) => {
         const isWork = item.category === 'Work' || !item.category;
+        const amount = item.status === 'rejected' ? 0 : (item.approved_amount !== undefined && item.approved_amount !== null ? item.approved_amount : (item.employee?.batta_amount || 0));
         return (
           <span className={cn("font-black", isWork ? "text-slate-900" : "text-slate-400 italic")}>
-            ₹{isWork ? (item.employee?.batta_amount || 0) : 0}
+            ₹{isWork ? amount : 0}
           </span>
         )
       }
@@ -283,7 +284,7 @@ export default function GlobalPending() {
                   <td className="py-2.5 px-4 border-r uppercase font-black text-[9px] text-amber-600">{item.status}</td>
                   <td className="py-2.5 px-4 border-r font-bold text-indigo-600">{getDisplayName(item.manager, i18n.language) || 'N/A'}</td>
                   <td className="py-2.5 px-4 text-right font-black text-slate-900">
-                    ₹{(item.category === 'Work' || !item.category) ? (item.employee?.batta_amount || 0) : 0}
+                    ₹{(item.category === 'Work' || !item.category) ? (item.status === 'rejected' ? 0 : (item.approved_amount !== undefined && item.approved_amount !== null ? item.approved_amount : (item.employee?.batta_amount || 0))) : 0}
                   </td>
                 </tr>
               ))}

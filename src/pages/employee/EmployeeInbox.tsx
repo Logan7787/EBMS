@@ -86,6 +86,10 @@ export default function EmployeeInbox() {
         return <span className="text-slate-400 font-bold italic">₹0 (Non-Work)</span>
       }
 
+      if (item.status === 'rejected') {
+        return <span className="text-red-600 font-bold max-w-[100px]">₹0 (Rejected)</span>
+      }
+      
       if (item.status === 'approved' && item.approved_amount !== undefined && item.approved_amount !== null) {
         if (item.approved_amount < defaultAmount) {
           return (

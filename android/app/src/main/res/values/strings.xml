@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EBMS</string>
+    <string name="title_activity_main">EBMS</string>
+    <string name="package_name">com.ebms.app</string>
+    <string name="custom_url_scheme">com.ebms.app</string>
+</resources>

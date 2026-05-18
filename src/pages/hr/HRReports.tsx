@@ -593,7 +593,7 @@ export default function HRReports() {
                                   <td className="px-4 py-2 text-right font-bold text-indigo-600">
                                     {entry.type === 'gap' ? '-' : (
                                       (entry.category === 'Work' || !entry.category) 
-                                        ? `₹${entry.approved_amount || entry.employee?.batta_amount || 0}`
+                                        ? `₹${entry.status === 'rejected' ? 0 : (entry.approved_amount !== undefined && entry.approved_amount !== null ? entry.approved_amount : (entry.employee?.batta_amount || 0))}`
                                         : '₹0'
                                     )}
                                   </td>

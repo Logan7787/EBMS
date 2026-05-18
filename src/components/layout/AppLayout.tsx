@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { MobileNavbar } from './MobileNavbar'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'sonner'
@@ -54,23 +55,26 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [user?.id, queryClient])
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex">
-      {/* Sidebar - fixed width on desktop */}
-      <div className="print:hidden">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col lg:flex-row">
+      {/* Sidebar - desktop only */}
+      <div className="hidden lg:block print:hidden">
         <Sidebar />
       </div>
+
+      {/* Mobile Navbar - mobile only */}
+      <MobileNavbar />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:ml-64 transition-all duration-300 print:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-64 transition-all duration-300 print:ml-0 pb-20 lg:pb-0">
         <div className="print:hidden">
           <TopBar />
         </div>
         
-        <main className="p-6 md:p-8 flex-1 max-w-[1600px] w-full mx-auto print:p-0 print:max-w-none">
+        <main className="p-4 md:p-8 flex-1 max-w-[1600px] w-full mx-auto print:p-0 print:max-w-none">
           {children}
         </main>
         
-        <footer className="px-8 py-4 text-center text-slate-400 text-xs border-t border-slate-100 print:hidden">
+        <footer className="px-8 py-4 text-center text-slate-400 text-xs border-t border-slate-100 hidden lg:block print:hidden">
           &copy; {new Date().getFullYear()} E-Batta Management System. All rights reserved.
         </footer>
       </div>
