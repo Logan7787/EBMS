@@ -656,11 +656,27 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
+      const currentYear = today.getFullYear()
+      const currentMonth = today.getMonth() + 1
+      const currentDay = today.getDate()
+      
       const checkDates: string[] = []
       
       // If date is provided, only check that date. Otherwise check the whole period.
       const searchDayStart = date ? new Date(date).getDate() : startDay
-      const searchDayEnd = date ? new Date(date).getDate() : Math.min(new Date().getDate(), endDay)
+      let searchDayEnd: number
+
+      if (date) {
+        searchDayEnd = new Date(date).getDate()
+      } else {
+        if (year < currentYear || (year === currentYear && month < currentMonth)) {
+          searchDayEnd = endDay
+        } else if (year === currentYear && month === currentMonth) {
+          searchDayEnd = Math.min(currentDay, endDay)
+        } else {
+          searchDayEnd = startDay - 1 // Future month, no dates to check
+        }
+      }
 
       for (let d = searchDayStart; d <= searchDayEnd; d++) {
         const dObj = new Date(year, month - 1, d)
