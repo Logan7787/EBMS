@@ -392,7 +392,7 @@ export function useTeamReport(month: number, year: number) {
 export function useGlobalBattaReport(month: number, year: number, period?: string, site?: string, date?: string) {
   const user = useAuthStore(s => s.user)
   return useQuery({
-    queryKey: ['global-batta-report', month, year, period, site],
+    queryKey: ['global-batta-report', month, year, period, site, date],
     queryFn: async () => {
       // Calculate the full date range for the period
       const lastDay = new Date(year, month, 0).getDate()
@@ -409,24 +409,41 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
         ? `*,employee:users!emp_id!inner(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
         : `*,employee:users!emp_id(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
 
-      let query = supabase
-        .from('batta_entries')
-        .select(selectStr)
-        .in('status', ['approved', 'rejected'])
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .limit(5000)
+      let data: any[] = []
+      let from = 0
+      const limit = 1000
+      let hasMore = true
 
-      if (site) {
-        query = query.eq('employee.site', site)
+      while (hasMore) {
+        let query = supabase
+          .from('batta_entries')
+          .select(selectStr)
+          .in('status', ['approved', 'rejected'])
+          .gte('date', startDate)
+          .lte('date', endDate)
+
+        if (site) {
+          query = query.eq('employee.site', site)
+        }
+
+        if (date) {
+          query = query.eq('date', date)
+        }
+
+        const { data: batchData, error } = await query.range(from, from + limit - 1)
+        if (error) throw error
+
+        if (batchData && batchData.length > 0) {
+          data = [...data, ...batchData]
+          if (batchData.length < limit) {
+            hasMore = false
+          } else {
+            from += limit
+          }
+        } else {
+          hasMore = false
+        }
       }
-
-      if (date) {
-        query = query.eq('date', date)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
 
       const today = new Date()
       // We'll generate dates for the entire selected period
@@ -621,10 +638,6 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
         ? 'emp_id,date,status,employee:users!emp_id!inner(site)'
         : 'emp_id,date,status'
 
-      let entriesQuery = supabase
-        .from('batta_entries')
-        .select(entriesSelectStr)
-
       const lastDay = new Date(year, month, 0).getDate()
       let startDay = 1
       let endDay = lastDay
@@ -634,23 +647,41 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
 
       const startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
       const endDateString = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
-      
-      entriesQuery = entriesQuery
-        .gte('date', startDate)
-        .lte('date', endDateString)
-        .limit(5000)
-      
-      if (site) {
-        entriesQuery = entriesQuery.eq('employee.site', site)
-      }
 
-      if (date) {
-        entriesQuery = entriesQuery.eq('date', date)
-      }
+      let entries: any[] = []
+      let from = 0
+      const limit = 1000
+      let hasMore = true
 
-      const { data, error: entriesError } = await entriesQuery
-      if (entriesError) throw entriesError
-      const entries = (data as any[]) || []
+      while (hasMore) {
+        let entriesQuery = supabase
+          .from('batta_entries')
+          .select(entriesSelectStr)
+          .gte('date', startDate)
+          .lte('date', endDateString)
+
+        if (site) {
+          entriesQuery = entriesQuery.eq('employee.site', site)
+        }
+
+        if (date) {
+          entriesQuery = entriesQuery.eq('date', date)
+        }
+
+        const { data: batchData, error: entriesError } = await entriesQuery.range(from, from + limit - 1)
+        if (entriesError) throw entriesError
+
+        if (batchData && batchData.length > 0) {
+          entries = [...entries, ...batchData]
+          if (batchData.length < limit) {
+            hasMore = false
+          } else {
+            from += limit
+          }
+        } else {
+          hasMore = false
+        }
+      }
 
       // 3. Determine the dates to check
       const today = new Date()
