@@ -1,19 +1,22 @@
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Send, BarChart3, UserCircle, Inbox } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { usePendingTeamBatta } from '../../hooks/useBatta'
+import { usePendingTeamBatta, usePendingSupercheckBatta } from '../../hooks/useBatta'
 import { cn } from '../../lib/utils'
 
 export function MobileNavbar() {
   const user = useAuthStore(s => s.user)
   const { data: pendingBatta } = usePendingTeamBatta()
   const pendingCount = pendingBatta?.length || 0
+  const { data: pendingSupercheckBatta } = usePendingSupercheckBatta()
+  const pendingSupercheckCount = pendingSupercheckBatta?.length || 0
 
   const navItems = [
     { 
       label: 'Home', 
       path: (user?.role === 'HR') ? '/hr' 
-            : (user?.role === 'accounts' || user?.role === 'supercheck') ? '/hr/reports'
+            : (user?.role === 'supercheck') ? '/supercheck/inbox'
+            : (user?.role === 'accounts') ? '/hr/reports'
             : (user?.role === 'Manager') ? '/manager' 
             : '/employee', 
       icon: LayoutDashboard,
@@ -27,9 +30,11 @@ export function MobileNavbar() {
     },
     { 
       label: 'Inbox', 
-      path: (user?.role === 'Manager' || user?.role === 'HR') ? '/manager/inbox' : '/inbox', 
+      path: (user?.role === 'supercheck') ? '/supercheck/inbox'
+            : (user?.role === 'Manager' || user?.role === 'HR') ? '/manager/inbox' 
+            : '/inbox', 
       icon: Inbox, 
-      roles: ['HR', 'Manager', 'Employee']
+      roles: ['HR', 'Manager', 'Employee', 'supercheck']
     },
     { 
       label: 'History', 
@@ -52,7 +57,7 @@ export function MobileNavbar() {
       <div className="flex items-center justify-around h-16 max-w-md mx-auto px-2">
         {filteredItems.map(item => (
           <NavLink
-            key={item.path}
+            key={`${item.path}-${item.label}`}
             to={item.path}
             className={({ isActive }) => cn(
               "flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all relative",
@@ -71,6 +76,11 @@ export function MobileNavbar() {
                 {item.path === '/manager/inbox' && pendingCount > 0 && (
                   <span className="absolute -top-1 right-2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
                     {pendingCount}
+                  </span>
+                )}
+                {item.path === '/supercheck/inbox' && pendingSupercheckCount > 0 && (
+                  <span className="absolute -top-1 right-2 bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
+                    {pendingSupercheckCount}
                   </span>
                 )}
               </>

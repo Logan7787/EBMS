@@ -13,6 +13,7 @@
     "submitMyBatta": "Submit My Batta"
   },
   "status": {
+    "pending_supercheck": "Pending Supercheck",
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected"

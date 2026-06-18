@@ -14,13 +14,18 @@ export function useMyBattaEntries(status?: BattaStatus, filters?: { month?: numb
           *,
           employee:users!emp_id (name, emp_code, site, batta_amount, designation, name_ta, name_hi),
           approver:users!approved_by (name, name_ta, name_hi),
-          manager:users!manager_id (name, name_ta, name_hi)
+          manager:users!manager_id (name, name_ta, name_hi),
+          verifier:users!verified_by (name, name_ta, name_hi)
         `)
         .eq('emp_id', user?.id)
         .order('date', { ascending: false })
 
       if (status) {
-        query = query.eq('status', status)
+        if (status === 'pending') {
+          query = query.in('status', ['pending', 'pending_supercheck'])
+        } else {
+          query = query.eq('status', status)
+        }
       }
 
       if (filters?.month && filters?.year) {
@@ -63,7 +68,8 @@ export function usePendingTeamBatta(filters?: { month?: number; year?: number; p
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount, designation)
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          verifier:users!verified_by (name)
         `)
         .eq('manager_id', user?.id)
         .eq('status', 'pending')
@@ -114,10 +120,11 @@ export function useRecentTeamDecisions(filters?: { month?: number; year?: number
         .from('batta_entries')
         .select(`
           *,
-          employee:users!emp_id (name, emp_code, site, batta_amount, designation)
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          verifier:users!verified_by (name)
         `)
         .eq('manager_id', user?.id)
-        .neq('status', 'pending')
+        .in('status', ['approved', 'rejected'])
         .order('date', { ascending: false })
 
       if (filters?.date) {
@@ -178,7 +185,7 @@ export function useSubmitBatta() {
           day_night: payload.dayNight,
           category: payload.category || 'Work',
           time: payload.time || null,
-          status: 'pending',
+          status: 'pending_supercheck',
         })
 
       if (error) {
@@ -337,7 +344,7 @@ export function useBattaStats(userId?: string) {
       if (error) throw error
       
       const stats = {
-        pending: data.filter(d => d.status === 'pending').length,
+        pending: data.filter(d => d.status === 'pending' || d.status === 'pending_supercheck').length,
         approved: data.filter(d => d.status === 'approved').length,
         thisMonth: data.filter(d => {
           const dDate = new Date(d.date)
@@ -406,8 +413,8 @@ export function useGlobalBattaReport(month: number, year: number, period?: strin
       const endDate = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
 
       const selectStr = site 
-        ? `*,employee:users!emp_id!inner(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
-        : `*,employee:users!emp_id(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name)`
+        ? `*,employee:users!emp_id!inner(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name),verifier:users!verified_by(name)`
+        : `*,employee:users!emp_id(name,emp_code,site,batta_amount,designation,catg_code),approver:users!approved_by(name),verifier:users!verified_by(name)`
 
       let data: any[] = []
       let from = 0
@@ -572,7 +579,8 @@ export function useGlobalPendingBatta(filters: { month: number; year: number; pe
         .select(`
           *,
           employee:users!emp_id (name, emp_code, site, batta_amount, designation),
-          manager:users!manager_id (name, emp_code, id)
+          manager:users!manager_id (name, emp_code, id),
+          verifier:users!verified_by (name)
         `)
         .neq('status', 'approved')
         .gte('date', startDate)
@@ -742,5 +750,144 @@ export function useMissingSubmissions(month: number, year: number, period?: stri
       })
     },
     enabled: !!user?.id && (user?.role === 'HR' || user?.role === 'accounts' || user?.role === 'supercheck'),
+  })
+}
+
+export function usePendingSupercheckBatta(filters?: { month?: number; year?: number; period?: string; search?: string; date?: string }) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['pending-supercheck-batta', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id!inner (name, emp_code, site, batta_amount, designation),
+          manager:users!manager_id (name, emp_code, id)
+        `)
+        .eq('status', 'pending_supercheck')
+        .order('date', { ascending: false })
+
+      if (user?.role === 'supercheck' && user?.site) {
+        query = query.eq('employee.site', user.site)
+      }
+
+      if (filters?.date) {
+        query = query.eq('date', filters.date)
+      } else if (filters?.month && filters?.year) {
+        const lastDay = new Date(filters.year, filters.month, 0).getDate()
+        let startDay = 1
+        let endDay = lastDay
+
+        if (filters.period === '1' || filters.period === '1-15') endDay = 15
+        else if (filters.period === '2' || filters.period === '16-end') startDay = 16
+
+        const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+        const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+        
+        query = query.gte('date', startDate).lte('date', endDate)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+
+      let filteredData = data as BattaEntry[]
+      if (filters?.search) {
+        const s = filters.search.toLowerCase()
+        filteredData = filteredData.filter(d => 
+          d.employee?.name.toLowerCase().includes(s) || 
+          d.employee?.emp_code.toLowerCase().includes(s) ||
+          d.particulars.toLowerCase().includes(s)
+        )
+      }
+
+      return filteredData
+    },
+    enabled: !!user?.id && (user?.role === 'supercheck' || user?.role === 'HR'),
+  })
+}
+
+export function useRecentSupercheckDecisions(filters?: { month?: number; year?: number; period?: string; search?: string; date?: string }) {
+  const user = useAuthStore(s => s.user)
+  return useQuery({
+    queryKey: ['recent-supercheck-decisions', user?.id, filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('batta_entries')
+        .select(`
+          *,
+          employee:users!emp_id (name, emp_code, site, batta_amount, designation),
+          manager:users!manager_id (name, emp_code, id)
+        `)
+        .eq('verified_by', user?.id)
+        .order('date', { ascending: false })
+
+      if (filters?.date) {
+        query = query.eq('date', filters.date)
+      } else if (filters?.month && filters?.year) {
+        const lastDay = new Date(filters.year, filters.month, 0).getDate()
+        let startDay = 1
+        let endDay = lastDay
+
+        if (filters.period === '1' || filters.period === '1-15') endDay = 15
+        else if (filters.period === '2' || filters.period === '16-end') startDay = 16
+
+        const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+        const endDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+        
+        query = query.gte('date', startDate).lte('date', endDate)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+
+      let filteredData = data as BattaEntry[]
+      if (filters?.search) {
+        const s = filters.search.toLowerCase()
+        filteredData = filteredData.filter(d => 
+          d.employee?.name.toLowerCase().includes(s) || 
+          d.employee?.emp_code.toLowerCase().includes(s) ||
+          d.particulars.toLowerCase().includes(s)
+        )
+      }
+
+      return filteredData
+    },
+    enabled: !!user?.id && (user?.role === 'supercheck' || user?.role === 'HR'),
+  })
+}
+
+export function useVerifyBatta() {
+  const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string
+      particulars: string
+      category: 'Work' | 'Leave' | 'NoWork'
+      approvedAmount: number
+      dayNight?: 'Day' | 'Night'
+      time?: string
+    }) => {
+      const { error } = await supabase
+        .from('batta_entries')
+        .update({
+          particulars: payload.particulars,
+          category: payload.category,
+          approved_amount: payload.approvedAmount,
+          day_night: payload.dayNight || undefined,
+          time: payload.time || null,
+          status: 'pending', // Acknowledged, sent to manager
+          verified_by: user?.id,
+        })
+        .eq('id', payload.id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pending-supercheck-batta'] })
+      qc.invalidateQueries({ queryKey: ['recent-supercheck-decisions'] })
+      qc.invalidateQueries({ queryKey: ['batta-entries'] })
+    },
   })
 }

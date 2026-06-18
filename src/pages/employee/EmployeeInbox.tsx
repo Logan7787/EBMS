@@ -58,7 +58,16 @@ export default function EmployeeInbox() {
         <span className="text-[10px] uppercase font-bold text-slate-400">{item.day_night} Shift</span>
       </div>
     ) },
-    { header: t('batta.particulars'), accessor: 'particulars' as const },
+    { header: t('batta.particulars'), accessor: (item: any) => (
+      <div className="flex flex-col">
+        <span className="text-slate-700">{item.particulars}</span>
+        {item.verifier?.name && (
+          <span className="text-[10px] font-bold text-emerald-600 mt-0.5">
+            ✓ Verified by {item.verifier.name}
+          </span>
+        )}
+      </div>
+    ) },
     { 
       header: t('batta.manager'), 
       accessor: (item: any) => (
@@ -105,7 +114,7 @@ export default function EmployeeInbox() {
     } },
     { header: t('actions.actions'), accessor: (item: any) => (
       <div className="flex items-center gap-2">
-        {item.status === 'pending' && (
+        {(item.status === 'pending' || item.status === 'pending_supercheck') && (
           <>
             <button 
               onClick={() => navigate(`/submit-batta?id=${item.id}`)}

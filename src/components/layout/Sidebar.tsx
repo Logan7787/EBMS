@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useAuth } from '../../hooks/useAuth'
-import { usePendingTeamBatta } from '../../hooks/useBatta'
+import { usePendingTeamBatta, usePendingSupercheckBatta } from '../../hooks/useBatta'
 import { cn } from '../../lib/utils'
 import { useState } from 'react'
 
@@ -30,11 +30,15 @@ export function Sidebar() {
   const { data: pendingBatta } = usePendingTeamBatta()
   const pendingCount = pendingBatta?.length || 0
 
+  const { data: pendingSupercheckBatta } = usePendingSupercheckBatta()
+  const pendingSupercheckCount = pendingSupercheckBatta?.length || 0
+
   const navItems = [
     { 
       label: t('nav.dashboard'), 
       path: (user?.role === 'HR') ? '/hr' 
-            : (user?.role === 'accounts' || user?.role === 'supercheck') ? '/hr/reports'
+            : (user?.role === 'supercheck') ? '/supercheck/inbox'
+            : (user?.role === 'accounts') ? '/hr/reports'
             : (user?.role === 'Manager') ? '/manager' 
             : '/employee', 
       icon: LayoutDashboard,
@@ -51,6 +55,12 @@ export function Sidebar() {
       path: '/inbox', 
       icon: Inbox, 
       roles: (user?.battaAmount || 0) > 0 ? ['Employee', 'Manager', 'HR'] : ['Employee']
+    },
+    { 
+      label: "Verification Inbox", 
+      path: '/supercheck/inbox', 
+      icon: Inbox, 
+      roles: ['supercheck', 'HR']
     },
     { 
       label: "Team Inbox", 
@@ -121,7 +131,7 @@ export function Sidebar() {
         <nav className="flex-1 px-4 space-y-1 mt-4">
           {filteredItems.map(item => (
             <NavLink
-              key={item.path}
+              key={`${item.path}-${item.label}`}
               to={item.path}
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
@@ -136,6 +146,11 @@ export function Sidebar() {
                 {item.path === '/manager/inbox' && pendingCount > 0 && (
                   <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm ml-auto">
                     {pendingCount}
+                  </span>
+                )}
+                {item.path === '/supercheck/inbox' && pendingSupercheckCount > 0 && (
+                  <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm ml-auto">
+                    {pendingSupercheckCount}
                   </span>
                 )}
               </NavLink>

@@ -18,7 +18,7 @@ export interface User {
   created_at: string
 }
 
-export type BattaStatus = 'pending' | 'approved' | 'rejected'
+export type BattaStatus = 'pending_supercheck' | 'pending' | 'approved' | 'rejected'
 
 export interface BattaEntry {
   id: string
@@ -28,6 +28,7 @@ export interface BattaEntry {
   manager_id: string
   status: BattaStatus
   approved_by?: string
+  verified_by?: string
   created_at: string
   day_night: 'Day' | 'Night'
   category: 'Work' | 'Leave' | 'NoWork'
@@ -46,6 +47,11 @@ export interface BattaEntry {
     catg_code?: string
   }
   manager?: {
+    name: string
+    name_ta?: string
+    name_hi?: string
+  }
+  verifier?: {
     name: string
     name_ta?: string
     name_hi?: string

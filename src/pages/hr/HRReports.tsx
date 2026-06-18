@@ -526,6 +526,7 @@ export default function HRReports() {
                                 <th className="px-4 py-2 border-b">Date</th>
                                 <th className="px-4 py-2 border-b">Status / Shift</th>
                                 <th className="px-4 py-2 border-b">Particulars</th>
+                                <th className="px-4 py-2 border-b">Verified by</th>
                                 <th className="px-4 py-2 border-b">Approved By</th>
                                 <th className="px-4 py-2 border-b text-right">Amount</th>
                               </tr>
@@ -586,6 +587,9 @@ export default function HRReports() {
                                   </td>
                                   <td className="px-4 py-2 text-slate-700">
                                     {entry.type === 'worked' ? entry.particulars : '-'}
+                                  </td>
+                                  <td className="px-4 py-2 text-slate-500 italic font-medium">
+                                    {entry.type === 'worked' ? (entry.verifier?.name || '-') : '-'}
                                   </td>
                                   <td className="px-4 py-2 text-slate-500 italic font-medium">
                                     {entry.type === 'worked' ? (entry.approver?.name || '-') : '-'}

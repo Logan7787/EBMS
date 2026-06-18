@@ -13,6 +13,7 @@
     "submitMyBatta": "मेरा भत्ता जमा करें"
   },
   "status": {
+    "pending_supercheck": "सुपरचेक लंबित",
     "pending": "लंबित",
     "approved": "स्वीकृत",
     "rejected": "अस्वीकृत"

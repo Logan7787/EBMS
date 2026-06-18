@@ -15,6 +15,7 @@ import ManagerInbox from './pages/manager/ManagerInbox'
 import FortnightReport from './pages/employee/FortnightReport'
 import ProfilePage from './pages/employee/ProfilePage'
 import GlobalPending from './pages/hr/GlobalPending'
+import SupercheckInbox from './pages/supercheck/SupercheckInbox'
 import { useAuthStore } from './stores/authStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
@@ -35,7 +36,8 @@ function PrivateRoute({ children, roles }: { children: React.ReactNode; roles: s
   if (!user) return <Navigate to="/login" replace />
   if (!roles.includes(user.role)) {
     const redirect = user.role === 'HR' ? '/hr' 
-                   : (user.role === 'accounts' || user.role === 'supercheck') ? '/hr/reports'
+                   : user.role === 'supercheck' ? '/supercheck/inbox'
+                   : user.role === 'accounts' ? '/hr/reports'
                    : user.role === 'Manager' ? '/manager' 
                    : '/employee'
     return <Navigate to={redirect} replace />
@@ -140,6 +142,9 @@ function App() {
         <Route path="/manager" element={<PrivateRoute roles={['Manager']}><ManagerDashboard /></PrivateRoute>} />
         <Route path="/manager/team" element={<PrivateRoute roles={['Manager', 'HR']}><TeamReport /></PrivateRoute>} />
         <Route path="/manager/inbox" element={<PrivateRoute roles={['Manager', 'HR']}><ManagerInbox /></PrivateRoute>} />
+        
+        {/* SUPERCHECK ROUTES */}
+        <Route path="/supercheck/inbox" element={<PrivateRoute roles={['supercheck', 'HR']}><SupercheckInbox /></PrivateRoute>} />
         
         {/* SHARED MANAGER/EMPLOYEE ROUTES */}
         <Route path="/submit-batta" element={

@@ -285,6 +285,11 @@ export default function ManagerInbox() {
                             </td>
                             <td className="px-5 py-4 max-w-xs truncate" title={entry.particulars}>
                               <span className="text-slate-500 italic">"{entry.particulars}"</span>
+                              {entry.verifier?.name && (
+                                <span className="block text-[10px] font-bold text-emerald-600 mt-0.5">
+                                  ✓ Verified by {entry.verifier.name}
+                                </span>
+                              )}
                             </td>
                             <td className="px-5 py-4 text-right">
                               <span className="text-lg font-black text-indigo-600">
@@ -347,6 +352,11 @@ export default function ManagerInbox() {
                           <p className="text-xs text-slate-600 italic line-clamp-2 leading-relaxed">
                             "{entry.particulars}"
                           </p>
+                          {entry.verifier?.name && (
+                            <p className="text-[10px] font-black text-emerald-600 mt-1.5 flex items-center gap-1">
+                              ✓ Verified by {entry.verifier.name}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -427,7 +437,16 @@ export default function ManagerInbox() {
                         const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                         return (
                           <tr key={entry.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-4 font-bold text-slate-900">{getDisplayName(emp, i18n.language)}</td>
+                            <td className="px-5 py-4 font-bold text-slate-900">
+                              <div className="flex flex-col">
+                                <span>{getDisplayName(emp, i18n.language)}</span>
+                                {entry.verifier?.name && (
+                                  <span className="text-[10px] font-bold text-emerald-600 mt-0.5">
+                                    Verified by {entry.verifier.name}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className="px-5 py-4">{formatDate(entry.date)}</td>
                             <td className="px-5 py-4 uppercase text-[10px] font-black tracking-widest">
                               <span className={cn(
@@ -463,6 +482,11 @@ export default function ManagerInbox() {
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-900 leading-tight">{getDisplayName(emp, i18n.language)}</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase">{formatDate(entry.date)}</span>
+                        {entry.verifier?.name && (
+                          <span className="text-[9px] font-bold text-emerald-600 mt-0.5">
+                            Verified by {entry.verifier.name}
+                          </span>
+                        )}
                         <div className="mt-1">
                           <span className={cn(
                             "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest",

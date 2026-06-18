@@ -91,10 +91,12 @@ export default function GlobalPending() {
       accessor: (item: any) => (
         <span className={cn(
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit",
-          item.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+          item.status === 'pending' ? "bg-amber-50 text-amber-600" : 
+          item.status === 'pending_supercheck' ? "bg-blue-50 text-blue-600 animate-pulse" : "bg-red-50 text-red-600"
         )}>
-          {item.status === 'pending' ? <Clock size={12} /> : <AlertCircle size={12} />}
-          {item.status}
+          {item.status === 'pending' ? <Clock size={12} /> : 
+           item.status === 'pending_supercheck' ? <Clock size={12} className="text-blue-500" /> : <AlertCircle size={12} />}
+          {item.status === 'pending_supercheck' ? 'Pending Supercheck' : item.status}
         </span>
       )
     },
@@ -103,7 +105,11 @@ export default function GlobalPending() {
       accessor: (item: any) => (
         <div className="flex flex-col">
           <span className="font-bold text-indigo-600">{getDisplayName(item.manager, i18n.language) || 'N/A'}</span>
-          <span className="text-[10px] font-medium text-slate-400 italic">Follow-up required</span>
+          {item.verifier?.name ? (
+            <span className="text-[10px] font-bold text-emerald-600">Verified by {item.verifier.name}</span>
+          ) : (
+            <span className="text-[10px] font-medium text-slate-400 italic">Follow-up required</span>
+          )}
         </div>
       )
     },

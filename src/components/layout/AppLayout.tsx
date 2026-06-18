@@ -24,12 +24,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'batta_entries' },
         (payload) => {
-          if (payload.new.manager_id === user.id) {
-            toast('New Batta Request', {
-              description: 'You have received a new approval request!',
-              icon: '📩',
+          if (user.role === 'supercheck' && payload.new.status === 'pending_supercheck') {
+            toast('New Batta for Verification', {
+              description: 'An employee has submitted a new batta entry.',
+              icon: '🔍',
             })
-            queryClient.invalidateQueries({ queryKey: ['pending-batta'] })
+            queryClient.invalidateQueries({ queryKey: ['pending-supercheck-batta'] })
           }
         }
       )
@@ -37,13 +37,31 @@ export function AppLayout({ children }: AppLayoutProps) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'batta_entries' },
         (payload) => {
-          if (payload.new.emp_id === user.id && payload.old.status === 'pending' && payload.new.status !== 'pending') {
-            const isApproved = payload.new.status === 'approved'
-            toast(isApproved ? 'Batta Approved' : 'Batta Rejected', {
-              description: `Your allowance request was ${payload.new.status}.`,
-              icon: isApproved ? '✅' : '❌',
+          // Notify manager when supercheck verifies it and sends to manager
+          if (payload.new.manager_id === user.id && payload.old.status === 'pending_supercheck' && payload.new.status === 'pending') {
+            toast('New Batta Request', {
+              description: 'You have received a new approval request!',
+              icon: '📩',
             })
-            queryClient.invalidateQueries({ queryKey: ['batta-entries'] })
+            queryClient.invalidateQueries({ queryKey: ['pending-batta'] })
+          }
+
+          // Notify employee of progress
+          if (payload.new.emp_id === user.id) {
+            if (payload.old.status === 'pending_supercheck' && payload.new.status === 'pending') {
+              toast('Batta Verified', {
+                description: 'Your request was verified by Supercheck and sent to Manager.',
+                icon: '🔍',
+              })
+              queryClient.invalidateQueries({ queryKey: ['batta-entries'] })
+            } else if (payload.old.status === 'pending' && payload.new.status !== 'pending') {
+              const isApproved = payload.new.status === 'approved'
+              toast(isApproved ? 'Batta Approved' : 'Batta Rejected', {
+                description: `Your allowance request was ${payload.new.status}.`,
+                icon: isApproved ? '✅' : '❌',
+              })
+              queryClient.invalidateQueries({ queryKey: ['batta-entries'] })
+            }
           }
         }
       )
@@ -52,7 +70,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, queryClient])
+  }, [user?.id, user?.role, queryClient])
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col lg:flex-row">
