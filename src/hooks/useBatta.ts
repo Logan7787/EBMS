@@ -868,18 +868,25 @@ export function useVerifyBatta() {
       approvedAmount: number
       dayNight?: 'Day' | 'Night'
       time?: string
+      managerId?: string
     }) => {
+      const updateData: any = {
+        particulars: payload.particulars,
+        category: payload.category,
+        approved_amount: payload.approvedAmount,
+        day_night: payload.dayNight || undefined,
+        time: payload.time || null,
+        status: 'pending', // Acknowledged, sent to manager
+        verified_by: user?.id,
+      }
+
+      if (payload.managerId) {
+        updateData.manager_id = payload.managerId
+      }
+
       const { error } = await supabase
         .from('batta_entries')
-        .update({
-          particulars: payload.particulars,
-          category: payload.category,
-          approved_amount: payload.approvedAmount,
-          day_night: payload.dayNight || undefined,
-          time: payload.time || null,
-          status: 'pending', // Acknowledged, sent to manager
-          verified_by: user?.id,
-        })
+        .update(updateData)
         .eq('id', payload.id)
 
       if (error) throw error

@@ -1,7 +1,6 @@
 import { ReactNode, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
-import { MobileNavbar } from './MobileNavbar'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'sonner'
@@ -74,16 +73,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col lg:flex-row">
-      {/* Sidebar - desktop only */}
-      <div className="hidden lg:block print:hidden">
+      {/* Sidebar - desktop & mobile */}
+      <div className="print:hidden">
         <Sidebar />
       </div>
-
-      {/* Mobile Navbar - mobile only */}
-      <MobileNavbar />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:ml-64 transition-all duration-300 print:ml-0 pb-20 lg:pb-0">
+      <div className="flex-1 flex flex-col lg:ml-64 transition-all duration-300 print:ml-0">
         <div className="print:hidden">
           <TopBar />
         </div>

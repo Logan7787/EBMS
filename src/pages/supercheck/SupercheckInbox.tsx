@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePendingSupercheckBatta, useRecentSupercheckDecisions, useVerifyBatta } from '../../hooks/useBatta'
-import { Check, Edit2, Search, X, Coins, MessageSquare, Calendar, Loader2, SunMoon, Clock, ClipboardCheck, History } from 'lucide-react'
+import { useManagers } from '../../hooks/useEmployees'
+import { Check, Edit2, Search, X, Coins, MessageSquare, Calendar, Loader2, SunMoon, Clock, ClipboardCheck, History, UserCheck } from 'lucide-react'
 import { formatDate, cn, getMonthOptions, getYearOptions } from '../../lib/utils'
 import { toast } from 'sonner'
 import { getDisplayName } from '../../lib/userUtils'
@@ -17,6 +18,8 @@ export default function SupercheckInbox() {
     search: ''
   })
 
+  const { data: managers } = useManagers()
+
   // Verify/Edit Dialog State
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [editForm, setEditForm] = useState({
@@ -24,7 +27,8 @@ export default function SupercheckInbox() {
     category: 'Work' as 'Work' | 'Leave' | 'NoWork',
     approvedAmount: 0,
     dayNight: 'Day' as 'Day' | 'Night',
-    time: ''
+    time: '',
+    managerId: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -54,13 +58,15 @@ export default function SupercheckInbox() {
     setSelectedEntry(entry)
     const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee
     const baseAmount = emp?.batta_amount || 0
+    const mgr = Array.isArray(entry.manager) ? entry.manager[0] : entry.manager
     
     setEditForm({
       particulars: entry.particulars,
       category: (entry.category || 'Work') as 'Work' | 'Leave' | 'NoWork',
       approvedAmount: entry.approved_amount !== undefined && entry.approved_amount !== null ? Number(entry.approved_amount) : Number(baseAmount),
       dayNight: (entry.day_night || 'Day') as 'Day' | 'Night',
-      time: entry.time || ''
+      time: entry.time || '',
+      managerId: entry.manager_id || mgr?.id || ''
     })
   }
 
@@ -99,6 +105,10 @@ export default function SupercheckInbox() {
       toast.error('Please enter a valid batta amount.')
       return
     }
+    if (!editForm.managerId) {
+      toast.error('Please select a reporting manager.')
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -108,7 +118,8 @@ export default function SupercheckInbox() {
         category: editForm.category,
         approvedAmount: editForm.approvedAmount,
         dayNight: editForm.dayNight,
-        time: editForm.dayNight === 'Night' ? editForm.time : undefined
+        time: editForm.dayNight === 'Night' ? editForm.time : undefined,
+        managerId: editForm.managerId
       })
       
       toast.success('Batta verified and forwarded to reporting manager successfully!')
@@ -271,7 +282,9 @@ export default function SupercheckInbox() {
                             <td className="px-5 py-4">
                               <div className="flex flex-col">
                                 <span className="font-bold text-slate-900">{getDisplayName(emp, i18n.language) || 'Unknown'}</span>
-                                <span className="text-[10px] font-bold text-slate-400">{emp?.emp_code || '---'}</span>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  {emp?.emp_code || '---'} • Mgr: {getDisplayName(Array.isArray(entry.manager) ? entry.manager[0] : entry.manager, i18n.language) || 'None'}
+                                </span>
                               </div>
                             </td>
                             <td className="px-5 py-4 text-slate-600 font-medium">
@@ -330,7 +343,9 @@ export default function SupercheckInbox() {
                       <div className="flex justify-between items-start">
                         <div>
                           <span className="font-black text-slate-900 text-lg leading-tight block">{getDisplayName(emp, i18n.language) || 'Unknown'}</span>
-                          <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">{emp?.emp_code || '---'} • {emp?.site || '-'}</span>
+                          <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                            {emp?.emp_code || '---'} • {emp?.site || '-'} • Mgr: {getDisplayName(Array.isArray(entry.manager) ? entry.manager[0] : entry.manager, i18n.language) || 'None'}
+                          </span>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 block font-bold leading-none">Rate</span>
@@ -407,7 +422,14 @@ export default function SupercheckInbox() {
                         const emp = Array.isArray(entry.employee) ? entry.employee[0] : entry.employee;
                         return (
                           <tr key={entry.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-4 font-bold text-slate-900">{getDisplayName(emp, i18n.language)}</td>
+                            <td className="px-5 py-4">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900">{getDisplayName(emp, i18n.language) || 'Unknown'}</span>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  Mgr: {getDisplayName(Array.isArray(entry.manager) ? entry.manager[0] : entry.manager, i18n.language) || 'None'}
+                                </span>
+                              </div>
+                            </td>
                             <td className="px-5 py-4">
                               <div className="flex flex-col">
                                 <span className="font-bold">{formatDate(entry.date)}</span>
@@ -464,7 +486,9 @@ export default function SupercheckInbox() {
                     <div key={entry.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-slate-900 leading-tight block">{getDisplayName(emp, i18n.language)}</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase">{formatDate(entry.date)} • {entry.day_night}</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase">
+                          {formatDate(entry.date)} • {entry.day_night} • Mgr: {getDisplayName(Array.isArray(entry.manager) ? entry.manager[0] : entry.manager, i18n.language) || 'None'}
+                        </span>
                         <div>
                           <span className={cn(
                             "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider",
@@ -530,6 +554,26 @@ export default function SupercheckInbox() {
                   <span className="font-bold text-slate-800 text-sm">{formatDate(selectedEntry.date)}</span>
                   <span className="text-slate-500 block uppercase font-bold">{selectedEntry.day_night} Shift</span>
                 </div>
+              </div>
+
+              {/* Reporting Manager Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <UserCheck size={16} className="text-indigo-500" />
+                  Reporting Manager
+                </label>
+                <select
+                  value={editForm.managerId}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, managerId: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-medium text-sm bg-white"
+                >
+                  <option value="">Select Manager</option>
+                  {managers?.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {getDisplayName(m, i18n.language)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Work Type Selection */}
